@@ -1,10 +1,14 @@
+//---------------------------------------------------------
+//	Cat's eye
+//
+//		©2016-2017 Yuichiro Nakada
+//---------------------------------------------------------
+
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
 #include <stdlib.h>
 #include "gpgpu_glsl.h"
 #define PARSON_IMPLEMENTATION
 #include "parson.h"
-//#define YUVRGB_IMPLEMENTATION
-//#include "yuv_rgb.h"
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_STATIC
@@ -117,7 +121,8 @@ precision highp float;
 
 uniform int INPUTPLANE;// INPUTPLANE/4
 uniform vec2 inputOffset[128/4];
-uniform float windex;	// +0.5
+//uniform float windex;	// +0.5
+uniform vec2 uvpos;
 
 uniform sampler2D X;
 uniform sampler2D W;
@@ -135,9 +140,18 @@ varying vec2 uv;
 
 void main()
 {
-	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);// arg = vec2(1./size.x, 1./size.x/size.y);
+	// calc uv pos [0-1, 0-1]
+//	vec2 a = uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
+	vec2 a = uv*uvpos;
+	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));
+	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
+	float op = oplane.x + oplane.y*16.;
+
+	// calc w pos
+	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-	pos[0] = arg * windex;	// arg * (index+0.5)
+//	pos[0] = arg * windex;	// arg * (index+0.5)
+	pos[0] = arg * (op*float(INPUTPLANE *9) +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
@@ -145,7 +159,7 @@ void main()
 
 	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
 	for (int i=0; i<INPUTPLANE; i++) {
-		vec2 tuv = uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.) + inputOffset[i];
+		vec2 tuv = a + inputOffset[i];
 
 		vec4 p[9];
 		p[0] = texture2D(X, tuv + vec2(-xSize, -ySize));
@@ -267,31 +281,11 @@ void main()
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
 	//gl_FragColor = texture2D(X, uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));
+	//gl_FragColor = texture2D(X, uv*uvpos);
+	//gl_FragColor = texture2D(X, a);
 }
 
 );
-
-/*void resizer(int argc, char **argv)
-{
-	unsigned char* input_pixels;
-	unsigned char* output_pixels;
-	int w, h;
-	int n;
-	int out_w, out_h;
-	input_pixels = stbi_load(argv[1], &w, &h, &n, 0);
-	out_w = w*3;
-	out_h = h*3;
-	output_pixels = (unsigned char*) malloc(out_w*out_h*n);
-	//stbir_resize_uint8_srgb(input_pixels, w, h, 0, output_pixels, out_w, out_h, 0, n, -1,0);
-	//stbir_resize_uint8(input_pixels, w, h, 0, output_pixels, out_w, out_h, 0, n);
-	stbir_resize_float(input_pixels, w, h, 0, output_pixels, out_w, out_h, 0, n);
-	stbi_write_png("output.png", out_w, out_h, n, output_pixels, 0);
-	exit(0);
-}*/
-void convert_image_float(const unsigned char* input, float* output, int length)
-{
-	for (int i=0; i<length; i++) output[i] = ((float)input[i])/255;
-}
 
 void *recalloc(void *p, int s, int ss)
 {
@@ -300,6 +294,26 @@ void *recalloc(void *p, int s, int ss)
 	memcpy(r, p, s);
 	free(p);
 	return r;
+}
+
+void result(char *name, int w, int h)
+{
+	float *d = coReadDataf(h, w, 0);
+	for (int i=0; i<h; i++) {
+		for (int j=0; j<w; j++) printf("%2.2f ", d[(i*w+j)*4]);
+		printf("\n");
+	}
+	printf("\n");
+
+	unsigned char *o = calloc(w*h, 1);
+	for (int y=0; y<h; y++) {
+		for (int x=0; x<w; x++) {
+			o[y*w+x] = d[(y*w+x)*4]*255;
+		}
+	}
+	stbi_write_png(name, w, h, 1, o, 0);
+	free(o);
+	free(d);
 }
 
 int32_t main(int32_t argc, char* argv[])
@@ -311,14 +325,8 @@ int32_t main(int32_t argc, char* argv[])
 
 	unsigned char *pix = malloc(w*2*h*2*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, w*2, h*2, 0, bpp, -1, 0);
-	//stbir_resize_uint8(pixels, w, h, 0, pix, w*2, h*2, 0, bpp);
-	//float *pix = malloc(sizeof(float)*256*256);
-	//stbir_resize_float(pixels, w, h, 0, pix, 256, 256, 0, 1);
 	stbi_image_free(pixels);
-//	free(pix);
-	//stbi_write_png("output.png", w*2, h*2, bpp, pix, 0);
 	stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0);
-//	exit(0);
 
 	unsigned char *p = malloc(256*256*3);
 	unsigned char *yuv = calloc(256*256*3/2, 1);
@@ -342,9 +350,6 @@ int32_t main(int32_t argc, char* argv[])
 		}
 	}
 	stbi_write_png("output_256.png", 256, 256, 3, p, 0);
-	//rgb24_yuv420_sseu(256, 256, p, 0, y, u, v, 0, 0, YCBCR_JPEG);
-	//rgb24_yuv420_std(256, 256, p, 0, y, u, v, 0, 0, YCBCR_JPEG);
-//	stbi_write_png("output.png", 256, 256, 1, y, 0);
 	stbi_write_png("output_y.png", 256, 256, 1, y, 0);
 	free(p);
 
@@ -375,35 +380,16 @@ int32_t main(int32_t argc, char* argv[])
 
 	coUniform4fv(prog, "bias", 1, cat.bdata); coAssert();
 	coUniform1i(prog, "INPUTPLANE", 1);
-	coUniform1f(prog, "windex", 0.5);
-	coBindOutputTexture(YSIZE, XSIZE, texture3);
+//	coUniform1f(prog, "windex", 0.5);
+//	coUniform2f(prog, "uvpos", (float)XSIZE/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
+//	coBindOutputTexture(YSIZE, XSIZE, texture3);
+	coUniform2f(prog, "uvpos", (float)XSIZE*8/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
+	coBindOutputTexture(YSIZE, XSIZE*8, texture3);
 	coCompute();
 
-	float *d = coReadDataf(YSIZE, XSIZE, 0);
-	for (int i=0; i<YSIZE; i++) {
-//		for (int j=0; j<XSIZE*4; j++) printf("%2.2f ", d[i*XSIZE*4+j]);
-		for (int j=0; j<XSIZE; j++) printf("%2.2f ", d[(i*XSIZE+j)*4]);
-		printf("\n");
-	}
-	printf("\n");
+	result("output_2x.png", XSIZE*8, YSIZE);
 
-	/*unsigned char *dd = (unsigned char*)d;
-	for (int i=0; i<YSIZE*XSIZE*4; i++) printf("%x ", dd[i]);
-	printf("\n");*/
-
-	unsigned char *o = calloc(256*256*3, 1);
-	for (int y=0; y<256; y++) {
-		for (int x=0; x<256; x++) {
-			o[(y*256+x)*3] = d[(y*XSIZE+x)*4]*255;
-			//o[(y*256+x)*3] = d[(y*256+x)*4+1]*255;
-			//o[(y*256+x)*3] = d[(y*256+x)*4+2]*255;
-			//o[(y*256+x)*3] = d[(y*256+x)*4+3]*255;
-		}
-	}
-	stbi_write_png("output_2x.png", 256, 256, 3, o, 0);
-	free(o);
 	free(yuv);
-	free(d);
 
 	coTerm();
 	return 0;
