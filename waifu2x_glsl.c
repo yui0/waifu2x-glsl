@@ -18,10 +18,23 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+typedef struct {
+	int type;	// MLP, CONV, MAXPOOL
+	int act;	// activation function type
+	int in;	// input channel
+	int out;	// output channel
+	int size;	// input size (ch * x * y)
+	int width;	// input width
+	int height;	// input height
+	int ksize;	// kernel size
+	int stride;
+} CatsEye_Layer;
+
 #define numerus		float
 typedef struct {
 	// number of each layer
-	int layers, *u;
+	int layers;
+	CatsEye_Layer *u;
 
 	// input layers
 	numerus *xdata;
@@ -47,11 +60,11 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 	JSON_Array *a = json_value_get_array(root_value);
 
 	this->layers = json_array_get_count(a);
-	this->u = malloc(sizeof(int)*7*this->layers);
-	this->b = malloc(sizeof(numerus*)*(this->layers));
-	this->bs = malloc(sizeof(int)*(this->layers));
-	this->w = malloc(sizeof(numerus*)*(this->layers));
-	this->ws = malloc(sizeof(int)*(this->layers));
+	this->u = malloc(sizeof(CatsEye_Layer)*this->layers);
+	this->b = malloc(sizeof(numerus*)*this->layers);
+	this->bs = malloc(sizeof(int)*this->layers);
+	this->w = malloc(sizeof(numerus*)*this->layers);
+	this->ws = malloc(sizeof(int)*this->layers);
 
 	this->bsize = 0;
 	for (int i=0; i<this->layers; i++) {
@@ -83,6 +96,9 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 		int kH = json_object_get_number(o, "kH");
 		int in = json_object_get_number(o, "nInputPlane");
 		int out = json_object_get_number(o, "nOutputPlane");
+		this->u[i].ksize = kW;
+		this->u[i].in = in;
+		this->u[i].out = out;
 
 		for (int j=0; j<out; j++) {
 			for (int k=0; k<in; k++) {
@@ -351,38 +367,43 @@ int32_t main(int32_t argc, char* argv[])
 
 	CatsEye cat;
 	CatsEye_loadJson(&cat, "noise1_model.json");
-	cat.wdata = recalloc(cat.wdata, cat.wsize, KERNEL_W*KERNEL_H*sizeof(numerus)*2);
-	cat.bdata = recalloc(cat.bdata, cat.bsize, cat.bsize+3);
+	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4);
+	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
 
 	coInit();
 
 	GLuint prog = coCreateProgram(convolution);
 	coBindVertices(prog);
 
-	GLuint texture0 = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
-	coTransferData(texture0, 0, 0, XSIZE, YSIZE, GL_FLOAT, f);
-	GLuint texture1 = coCreateDataTexture(KERNEL_H, KERNEL_W, cat.wdata, GL_FLOAT);
-	GLuint texture3 = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
-	coBindInputTexture(prog, texture0, GL_TEXTURE0, "X");
-	coBindInputTexture(prog, texture1, GL_TEXTURE1, "W");
+	GLuint texture[3];
+	texture[0] = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
+	coTransferData(texture[0], 0, 0, XSIZE, YSIZE, GL_FLOAT, f);
+	texture[1] = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
+	texture[2] = coCreateDataTexture(KERNEL_H, KERNEL_W, cat.wdata, GL_FLOAT);
+	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	float ioffset[128/4*2];
-	for (int i=0; i<128/4*2; i++) {
+//	for (int i=0; i<128/4*2; i++) {
+	for (int i=0; i<128/4; i++) {
                 ioffset[i*2] = (i % 16) / 16.0;
                 ioffset[i*2+1] = floor(i / 16.0) / 8.0;
 		//printf("%f %f\n", ioffset[i*2], ioffset[i*2+1]);
 	}
-	coUniform2fv(prog, "inputOffset", 128/4*2, ioffset);
+//	coUniform2fv(prog, "inputOffset", 128/4*2, ioffset);
+	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
 
-//	coUniform4fv(prog, "bias", 1, cat.bdata); coAssert();
 	coUniform1i(prog, "INPUTPLANE", 1);
-//	coUniform2f(prog, "uvpos", (float)XSIZE/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
-//	coBindOutputTexture(YSIZE, XSIZE, texture3);
 	coUniform4fv(prog, "bias", 8, cat.bdata); coAssert();
 	coUniform2f(prog, "uvpos", (float)XSIZE*8/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
-	coBindOutputTexture(YSIZE, XSIZE*8, texture3);
+	coBindInputTexture(prog, texture[0], GL_TEXTURE0, "X");
+	coBindOutputTexture(YSIZE, XSIZE*8, texture[1]);
 	coCompute();
 	result("output_2x.png", XSIZE*8, YSIZE);
+
+	printf("%d\n", cat.layers);
+	for (int i=0; i<cat.layers; i++) {
+		printf("%d %d\n", cat.u[i].in, cat.u[i].out);
+	}
 
 	free(yuv);
 
