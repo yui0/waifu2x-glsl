@@ -329,7 +329,7 @@ void result(char *name, int w, int h)
 	free(d);
 }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define debug(x)	{x;}
 #else
@@ -392,8 +392,10 @@ int32_t main(int32_t argc, char* argv[])
 
 	float ioffset[128/4*2];
 	for (int i=0; i<128/4; i++) {
-                ioffset[i*2] = (i % 16) / 16.0;
-                ioffset[i*2+1] = floor(i / 16.0) / 8.0;
+		ioffset[i*2] = (i % 16) / 16.0;
+		ioffset[i*2+1] = floor(i / 16.0) / 8.0;
+//		ioffset[i*2] = (i % 16) / 16.0 +0.5/DATA_XSIZE;
+//		ioffset[i*2+1] = floor(i / 16.0) / 8.0 +0.5/DATA_XSIZE;
 		//printf("%f %f\n", ioffset[i*2], ioffset[i*2+1]);
 	}
 	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
