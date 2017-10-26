@@ -344,8 +344,8 @@ int32_t main(int32_t argc, char* argv[])
 	unsigned char *p = malloc(256*256*3);
 	unsigned char *yuv = calloc(256*256*3/2, 1);
 	unsigned char *y = yuv;
-	unsigned char *u = yuv +256*256;
-	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
+//	unsigned char *u = yuv +256*256;
+//	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
 	float *f = calloc(256*256*4, sizeof(float));
 	for (int y=0; y<256; y++) {
 		for (int x=0; x<256; x++) {
@@ -356,15 +356,15 @@ int32_t main(int32_t argc, char* argv[])
 			unsigned char g = pix[(y*w*2+x)*3+1];
 			unsigned char b = pix[(y*w*2+x)*3+2];
 			p[(y*256+x)*3] = 0.299*r +0.587*g +0.114*b;
-			p[(y*256+x)*3+1] = -0.169*r -0.331*g +0.500*b;
-			p[(y*256+x)*3+2] = 0.500*r -0.419*g -0.081*b;
+			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
+			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
 			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
 			f[(y*256+x)*4] = (0.299*r +0.587*g +0.114*b)/255.0;
 		}
 	}
 	stbi_write_png("output_256.png", 256, 256, 3, p, 0);
 	stbi_write_png("output_y.png", 256, 256, 1, y, 0);
-	free(p);
+	free(pix);
 
 	CatsEye cat;
 	CatsEye_loadJson(&cat, "noise1_model.json");
@@ -384,22 +384,12 @@ int32_t main(int32_t argc, char* argv[])
 	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	float ioffset[128/4*2];
-//	for (int i=0; i<128/4*2; i++) {
 	for (int i=0; i<128/4; i++) {
                 ioffset[i*2] = (i % 16) / 16.0;
                 ioffset[i*2+1] = floor(i / 16.0) / 8.0;
 		//printf("%f %f\n", ioffset[i*2], ioffset[i*2+1]);
 	}
-//	coUniform2fv(prog, "inputOffset", 128/4*2, ioffset);
 	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
-
-/*	coUniform1i(prog, "INPUTPLANE", 1);
-	coUniform4fv(prog, "bias", 8, cat.bdata); coAssert();
-	coUniform2f(prog, "uvpos", (float)XSIZE*8/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
-	coBindInputTexture(prog, texture[0], GL_TEXTURE0, "X");
-	coBindOutputTexture(YSIZE, XSIZE*8, texture[1]);
-	coCompute();
-	result("output_2x.png", XSIZE*8, YSIZE);*/
 
 	int n = 0;
 	int r = 1;
@@ -410,22 +400,48 @@ int32_t main(int32_t argc, char* argv[])
 		int h = (a+15)/16;
 		printf("%d %d %dx%d %d %d\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i]);
 
-//		coUniform1i(prog, "INPUTPLANE", cat.u[i].in);
 		coUniform1i(prog, "INPUTPLANE", (cat.u[i].in+3)/4);
 		coUniform4fv(prog, "bias", w, &cat.bdata[cat.bs[i]]); coAssert();
 		coUniform2f(prog, "uvpos", (float)XSIZE*w/DATA_XSIZE, (float)YSIZE*h/DATA_YSIZE);
-		coUniform1f(prog, "wpos", (float)cat.ws[i]);
+		coUniform1f(prog, "wpos", (float)cat.ws[i]/4);
 		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
 		coBindOutputTexture(YSIZE*h, XSIZE*w, texture[r]);
 		coCompute();
 		n ^= 1;
 		r ^= 1;
 		char *buff[256];
-		sprintf(buff, "output2x_%d.png", i);
+		sprintf(buff, "output2x_%2d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
 	}
 
+	float *d = coReadDataf(YSIZE, XSIZE, 0);
+	unsigned char *o = calloc(XSIZE*YSIZE, 3);
+	for (int y=0; y<YSIZE; y++) {
+		for (int x=0; x<XSIZE; x++) {
+			//int yy = (d[(y*XSIZE+x)*4]+1.0)*255;
+			int yy = -255*(d[(y*XSIZE+x)*4]);
+			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
+			//printf("%d ",yy);
+/*			yy = yy<0 ? 0: yy>255 ? 255: yy;
+			o[(y*XSIZE+x)*3] = yy;
+			o[(y*XSIZE+x)*3+1] = yy;
+			o[(y*XSIZE+x)*3+2] = yy;*/
+
+//			unsigned char yy = 255-d[(y*XSIZE+x)*4]*255;
+			unsigned char u = p[(y*256+x)*3+1];
+			unsigned char v = p[(y*256+x)*3+2];
+			o[(y*XSIZE+x)*3] = yy +1.402 *(v-128);
+			o[(y*XSIZE+x)*3+1] = yy -0.34414 *(u-128) -0.71414*(v-128);
+			o[(y*XSIZE+x)*3+2] = yy +1.772 *(v-128);
+		}
+	}
+	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
+	free(o);
+	free(d);
+
 	free(yuv);
+	free(f);
+	free(p);
 
 	coTerm();
 	return 0;
