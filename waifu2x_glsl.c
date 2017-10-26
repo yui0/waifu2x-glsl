@@ -7,6 +7,9 @@
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
 #include <stdlib.h>
 #include "gpgpu_glsl.h"
+
+#define PARG_IMPLEMENTATION
+#include "parg.h"
 #define PARSON_IMPLEMENTATION
 #include "parson.h"
 
@@ -336,12 +339,12 @@ void result(char *name, int w, int h)
 #define debug(x)
 #endif
 
-int32_t main(int32_t argc, char* argv[])
+int waifu2x_glsl(char *name, char *model)
 {
 	unsigned char *pixels;
 	int w, h, bpp;
-	pixels = stbi_load(argv[1], &w, &h, &bpp, 3);
-	printf("%s %dx%d %d\n", argv[1], w, h, bpp);
+	pixels = stbi_load(name, &w, &h, &bpp, 3);
+	printf("%s %dx%d %d\n", name, w, h, bpp);
 
 	unsigned char *pix = malloc(w*2*h*2*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, w*2, h*2, 0, bpp, -1, 0);
@@ -350,7 +353,7 @@ int32_t main(int32_t argc, char* argv[])
 
 	unsigned char *p = malloc(256*256*3);
 	unsigned char *yuv = calloc(256*256*3/2, 1);
-	unsigned char *y = yuv;
+//	unsigned char *y = yuv;
 //	unsigned char *u = yuv +256*256;
 //	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
 	float *f = calloc(256*256*4, sizeof(float));
@@ -370,11 +373,11 @@ int32_t main(int32_t argc, char* argv[])
 		}
 	}
 	debug(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
-	debug(stbi_write_png("output_y.png", 256, 256, 1, y, 0));
+	debug(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
 	free(pix);
 
 	CatsEye cat;
-	CatsEye_loadJson(&cat, "noise1_model.json");
+	CatsEye_loadJson(&cat, model);
 	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4);
 	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
 
@@ -456,5 +459,38 @@ int32_t main(int32_t argc, char* argv[])
 	free(p);
 
 	coTerm();
+	return 0;
+}
+
+int main(int argc, char* argv[])
+{
+	char *name;
+	char *model = "noise1_model.json";
+	struct parg_state ps;
+	int c;
+
+	parg_init(&ps);
+	while ((c = parg_getopt(&ps, argc, argv, "hm:rx")) != -1) {
+		switch (c) {
+		case 1:
+			name = (char*)ps.optarg;
+			break;
+		case 'm':
+			model = (char*)ps.optarg;
+			break;
+/*		case 'r':
+			flag |= LS_RECURSIVE;
+			break;
+		case 'x':
+			flag |= LS_RANDOM;
+			break;*/
+		case 'h':
+		default:
+//			usage(stderr, argc, argv);
+			return 1;
+		}
+	}
+	waifu2x_glsl(name, model);
+
 	return 0;
 }

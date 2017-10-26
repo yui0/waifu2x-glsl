@@ -10,13 +10,15 @@ waifu2x converter GPU Optimization in OpenGL Shader
 
 ## How to build
 
-- make
+```bash
+$ make
+```
 
 ## Usage
 
 ```bash
 $ ./waifu2x_glsl nyanko.jpg
-
+$ ./waifu2x_glsl nyanko.jpg -m vgg_7/art_y/noise3_model.json 
 ```
 
 ## How to work
