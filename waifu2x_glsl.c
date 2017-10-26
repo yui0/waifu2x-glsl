@@ -329,6 +329,13 @@ void result(char *name, int w, int h)
 	free(d);
 }
 
+#define DEBUG
+#ifdef DEBUG
+#define debug(x)	{x;}
+#else
+#define debug(x)
+#endif
+
 int32_t main(int32_t argc, char* argv[])
 {
 	unsigned char *pixels;
@@ -339,7 +346,7 @@ int32_t main(int32_t argc, char* argv[])
 	unsigned char *pix = malloc(w*2*h*2*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, w*2, h*2, 0, bpp, -1, 0);
 	stbi_image_free(pixels);
-	stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0);
+	debug(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
 
 	unsigned char *p = malloc(256*256*3);
 	unsigned char *yuv = calloc(256*256*3/2, 1);
@@ -362,8 +369,8 @@ int32_t main(int32_t argc, char* argv[])
 			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
 		}
 	}
-	stbi_write_png("output_256.png", 256, 256, 3, p, 0);
-	stbi_write_png("output_y.png", 256, 256, 1, y, 0);
+	debug(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
+	debug(stbi_write_png("output_y.png", 256, 256, 1, y, 0));
 	free(pix);
 
 	CatsEye cat;
@@ -409,9 +416,11 @@ int32_t main(int32_t argc, char* argv[])
 		coCompute();
 		n ^= 1;
 		r ^= 1;
+#ifdef DEBUG
 		char *buff[256];
 		sprintf(buff, "output2x_%02d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
+#endif
 	}
 
 	float *d = coReadDataf(YSIZE, XSIZE, 0);
