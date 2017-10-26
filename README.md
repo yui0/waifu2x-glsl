@@ -22,12 +22,12 @@ $ ./waifu2x_glsl nyanko.jpg
 ## How to work
 
 ![01.Nyanko](nyanko_01.png "01")
-![02.Nyanko](nyanko_01.png "02")
-![03.Nyanko](nyanko_01.png "03")
-![04.Nyanko](nyanko_01.png "04")
-![05.Nyanko](nyanko_01.png "05")
-![06.Nyanko](nyanko_01.png "06")
-![07.Nyanko](nyanko_01.png "07")
+![02.Nyanko](nyanko_02.png "02")
+![03.Nyanko](nyanko_03.png "03")
+![04.Nyanko](nyanko_04.png "04")
+![05.Nyanko](nyanko_05.png "05")
+![06.Nyanko](nyanko_06.png "06")
+![07.Nyanko](nyanko_07.png "07")
 
 ## References
 
