@@ -359,7 +359,7 @@ int32_t main(int32_t argc, char* argv[])
 			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
 			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
 			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
-			f[(y*256+x)*4] = (0.299*r +0.587*g +0.114*b)/255.0;
+			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
 		}
 	}
 	stbi_write_png("output_256.png", 256, 256, 3, p, 0);
@@ -410,7 +410,7 @@ int32_t main(int32_t argc, char* argv[])
 		n ^= 1;
 		r ^= 1;
 		char *buff[256];
-		sprintf(buff, "output2x_%2d.png", i+1);
+		sprintf(buff, "output2x_%02d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
 	}
 
@@ -428,11 +428,12 @@ int32_t main(int32_t argc, char* argv[])
 			o[(y*XSIZE+x)*3+2] = yy;*/
 
 //			unsigned char yy = 255-d[(y*XSIZE+x)*4]*255;
+//			unsigned char yy = p[(y*256+x)*3];
 			unsigned char u = p[(y*256+x)*3+1];
 			unsigned char v = p[(y*256+x)*3+2];
 			o[(y*XSIZE+x)*3] = yy +1.402 *(v-128);
 			o[(y*XSIZE+x)*3+1] = yy -0.34414 *(u-128) -0.71414*(v-128);
-			o[(y*XSIZE+x)*3+2] = yy +1.772 *(v-128);
+			o[(y*XSIZE+x)*3+2] = yy +1.772 *(u-128);
 		}
 	}
 	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
