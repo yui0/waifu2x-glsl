@@ -138,6 +138,7 @@ precision highp float;
 uniform int INPUTPLANE;	// INPUTPLANE/4
 uniform vec2 inputOffset[128/4];
 uniform vec2 uvpos;
+uniform float wpos;
 
 uniform sampler2D X;
 uniform sampler2D W;
@@ -165,7 +166,7 @@ void main()
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-	pos[0] = arg * (float(op* INPUTPLANE *9) +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (wpos+ float(op* INPUTPLANE *9) +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
@@ -294,7 +295,7 @@ void main()
 	sum += bias[op];
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
-	//gl_FragColor = texture2D(X, a);
+//	gl_FragColor = texture2D(X, a);
 }
 
 );
@@ -311,11 +312,11 @@ void *recalloc(void *p, int s, int ss)
 void result(char *name, int w, int h)
 {
 	float *d = coReadDataf(h, w, 0);
-	for (int i=0; i<h; i++) {
+/*	for (int i=0; i<h; i++) {
 		for (int j=0; j<w; j++) printf("%2.2f ", d[(i*w+j)*4]);
 		printf("\n");
 	}
-	printf("\n");
+	printf("\n");*/
 
 	unsigned char *o = calloc(w*h, 1);
 	for (int y=0; y<h; y++) {
@@ -392,17 +393,36 @@ int32_t main(int32_t argc, char* argv[])
 //	coUniform2fv(prog, "inputOffset", 128/4*2, ioffset);
 	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
 
-	coUniform1i(prog, "INPUTPLANE", 1);
+/*	coUniform1i(prog, "INPUTPLANE", 1);
 	coUniform4fv(prog, "bias", 8, cat.bdata); coAssert();
 	coUniform2f(prog, "uvpos", (float)XSIZE*8/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
 	coBindInputTexture(prog, texture[0], GL_TEXTURE0, "X");
 	coBindOutputTexture(YSIZE, XSIZE*8, texture[1]);
 	coCompute();
-	result("output_2x.png", XSIZE*8, YSIZE);
+	result("output_2x.png", XSIZE*8, YSIZE);*/
 
-	printf("%d\n", cat.layers);
+	int n = 0;
+	int r = 1;
+	//printf("%d\n", cat.layers);
 	for (int i=0; i<cat.layers; i++) {
-		printf("%d %d\n", cat.u[i].in, cat.u[i].out);
+		int a = (cat.u[i].out+3)/4;
+		int w = a>16 ? 16 : a;
+		int h = (a+15)/16;
+		printf("%d %d %dx%d %d %d\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i]);
+
+//		coUniform1i(prog, "INPUTPLANE", cat.u[i].in);
+		coUniform1i(prog, "INPUTPLANE", (cat.u[i].in+3)/4);
+		coUniform4fv(prog, "bias", w, &cat.bdata[cat.bs[i]]); coAssert();
+		coUniform2f(prog, "uvpos", (float)XSIZE*w/DATA_XSIZE, (float)YSIZE*h/DATA_YSIZE);
+		coUniform1f(prog, "wpos", (float)cat.ws[i]);
+		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
+		coBindOutputTexture(YSIZE*h, XSIZE*w, texture[r]);
+		coCompute();
+		n ^= 1;
+		r ^= 1;
+		char *buff[256];
+		sprintf(buff, "output2x_%d.png", i);
+		result(buff, XSIZE*w, YSIZE*h);
 	}
 
 	free(yuv);
