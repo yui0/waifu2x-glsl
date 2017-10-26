@@ -119,14 +119,13 @@ precision highp float;
 #define xSize		1./DATA_XSIZE.
 #define ySize		1./DATA_YSIZE.
 
-uniform int INPUTPLANE;// INPUTPLANE/4
+uniform int INPUTPLANE;	// INPUTPLANE/4
 uniform vec2 inputOffset[128/4];
-//uniform float windex;	// +0.5
 uniform vec2 uvpos;
 
 uniform sampler2D X;
 uniform sampler2D W;
-uniform vec4 bias;	// 4
+uniform vec4 bias[128/4];	// 4
 
 varying vec2 uv;
 
@@ -143,15 +142,14 @@ void main()
 	// calc uv pos [0-1, 0-1]
 //	vec2 a = uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
 	vec2 a = uv*uvpos;
-	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));
+	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
-	float op = oplane.x + oplane.y*16.;
+	int op = int(oplane.x + oplane.y*16.);
 
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-//	pos[0] = arg * windex;	// arg * (index+0.5)
-	pos[0] = arg * (op*float(INPUTPLANE *9) +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (float(op* INPUTPLANE *9) +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
@@ -277,11 +275,9 @@ void main()
 		sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
 	}
-	sum += bias;
+	sum += bias[op];
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
-	//gl_FragColor = texture2D(X, uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));
-	//gl_FragColor = texture2D(X, uv*uvpos);
 	//gl_FragColor = texture2D(X, a);
 }
 
@@ -378,15 +374,14 @@ int32_t main(int32_t argc, char* argv[])
 	}
 	coUniform2fv(prog, "inputOffset", 128/4*2, ioffset);
 
-	coUniform4fv(prog, "bias", 1, cat.bdata); coAssert();
+//	coUniform4fv(prog, "bias", 1, cat.bdata); coAssert();
 	coUniform1i(prog, "INPUTPLANE", 1);
-//	coUniform1f(prog, "windex", 0.5);
 //	coUniform2f(prog, "uvpos", (float)XSIZE/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
 //	coBindOutputTexture(YSIZE, XSIZE, texture3);
+	coUniform4fv(prog, "bias", 8, cat.bdata); coAssert();
 	coUniform2f(prog, "uvpos", (float)XSIZE*8/DATA_XSIZE, (float)YSIZE/DATA_YSIZE);
 	coBindOutputTexture(YSIZE, XSIZE*8, texture3);
 	coCompute();
-
 	result("output_2x.png", XSIZE*8, YSIZE);
 
 	free(yuv);
