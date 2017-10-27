@@ -415,7 +415,7 @@ int waifu2x_glsl(char *name, char *model)
 		printf("%d %d %dx%d %d %d\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i]);
 
 		coUniform1i(prog, "INPUTPLANE", (cat.u[i].in+3)/4);
-		coUniform4fv(prog, "bias", w, &cat.bdata[cat.bs[i]]); coAssert();
+		coUniform4fv(prog, "bias", a, &cat.bdata[cat.bs[i]]); coAssert();
 		coUniform2f(prog, "uvpos", (float)XSIZE*w/DATA_XSIZE, (float)YSIZE*h/DATA_YSIZE);
 		coUniform1f(prog, "wpos", (float)cat.ws[i]/4);
 		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
