@@ -332,7 +332,7 @@ void result(char *name, int w, int h)
 	free(d);
 }
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define debug(x)	{x;}
 #else
@@ -357,11 +357,10 @@ int waifu2x_glsl(char *name, char *model)
 //	unsigned char *u = yuv +256*256;
 //	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
 	float *f = calloc(256*256*4, sizeof(float));
+//	float *u = calloc(256*256, sizeof(float));
+//	float *v = calloc(256*256, sizeof(float));
 	for (int y=0; y<256; y++) {
 		for (int x=0; x<256; x++) {
-//			p[(y*256+x)*3] = pix[(y*w*2+x)*3];
-//			p[(y*256+x)*3+1] = pix[(y*w*2+x)*3+1];
-//			p[(y*256+x)*3+2] = pix[(y*w*2+x)*3+2];
 			unsigned char r = pix[(y*w*2+x)*3];
 			unsigned char g = pix[(y*w*2+x)*3+1];
 			unsigned char b = pix[(y*w*2+x)*3+2];
@@ -369,7 +368,10 @@ int waifu2x_glsl(char *name, char *model)
 			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
 			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
 			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
+
 			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
+//			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+//			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 		}
 	}
 	debug(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -419,7 +421,7 @@ int waifu2x_glsl(char *name, char *model)
 		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
 		coBindOutputTexture(YSIZE*h, XSIZE*w, texture[r]);
 		coCompute();
-		n ^= 1;
+		n ^= 1;	// swap
 		r ^= 1;
 #ifdef DEBUG
 		char *buff[256];
@@ -433,9 +435,9 @@ int waifu2x_glsl(char *name, char *model)
 	for (int y=0; y<YSIZE; y++) {
 		for (int x=0; x<XSIZE; x++) {
 			//int yy = (d[(y*XSIZE+x)*4]+1.0)*255;
-			int yy = -255*(d[(y*XSIZE+x)*4]);
 			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
-			//printf("%d ",yy);
+			int yy = -196*d[(y*XSIZE+x)*4];
+			if (yy<0 || yy>255) printf("%d ",yy);
 /*			yy = yy<0 ? 0: yy>255 ? 255: yy;
 			o[(y*XSIZE+x)*3] = yy;
 			o[(y*XSIZE+x)*3+1] = yy;
@@ -448,6 +450,12 @@ int waifu2x_glsl(char *name, char *model)
 			o[(y*XSIZE+x)*3] = yy +1.402 *(v-128);
 			o[(y*XSIZE+x)*3+1] = yy -0.34414 *(u-128) -0.71414*(v-128);
 			o[(y*XSIZE+x)*3+2] = yy +1.772 *(u-128);
+
+/*			float yy = -255*d[(y*XSIZE+x)*4];
+			if (yy<0 || yy>255) printf("%2.2f ",yy);
+			o[(y*XSIZE+x)*3] = yy +1.140*v[y*256+x];
+			o[(y*XSIZE+x)*3+1] = yy -0.395*u[y*256+x] -0.580*v[y*256+x];
+			o[(y*XSIZE+x)*3+2] = yy +2.032*u[y*256+x];*/
 		}
 	}
 	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
@@ -470,7 +478,7 @@ int main(int argc, char* argv[])
 	int c;
 
 	parg_init(&ps);
-	while ((c = parg_getopt(&ps, argc, argv, "hm:rx")) != -1) {
+	while ((c = parg_getopt(&ps, argc, argv, "hm:")) != -1) {
 		switch (c) {
 		case 1:
 			name = (char*)ps.optarg;
@@ -478,12 +486,6 @@ int main(int argc, char* argv[])
 		case 'm':
 			model = (char*)ps.optarg;
 			break;
-/*		case 'r':
-			flag |= LS_RECURSIVE;
-			break;
-		case 'x':
-			flag |= LS_RANDOM;
-			break;*/
 		case 'h':
 		default:
 //			usage(stderr, argc, argv);
