@@ -334,9 +334,9 @@ void result(char *name, int w, int h)
 
 #define DEBUG
 #ifdef DEBUG
-#define debug(x)	{x;}
+#define debug_s(x)	{x;}
 #else
-#define debug(x)
+#define debug_s(x)
 #endif
 
 int waifu2x_glsl(char *name, char *model)
@@ -345,11 +345,12 @@ int waifu2x_glsl(char *name, char *model)
 	int w, h, bpp;
 	pixels = stbi_load(name, &w, &h, &bpp, 3);
 	printf("%s %dx%d %d\n", name, w, h, bpp);
+	bpp = 3;
 
 	unsigned char *pix = malloc(w*2*h*2*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, w*2, h*2, 0, bpp, -1, 0);
 	stbi_image_free(pixels);
-	debug(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
+	debug_s(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
 
 	unsigned char *p = malloc(256*256*3);
 	unsigned char *yuv = calloc(256*256*3/2, 1);
@@ -374,8 +375,8 @@ int waifu2x_glsl(char *name, char *model)
 //			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 		}
 	}
-	debug(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
-	debug(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
+	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
+	debug_s(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
 	free(pix);
 
 	CatsEye cat;
