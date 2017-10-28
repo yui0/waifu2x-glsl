@@ -152,7 +152,7 @@ void coBindVertices(GLuint prog)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vIndices), (void*)vIndices, GL_STATIC_DRAW);
 }
 
-GLuint coCreateDataTexture(int h, int w, void *texels, GLuint type)
+GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type)
 {
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -189,7 +189,7 @@ void coBindInputTexture(GLuint program, GLuint texture, GLuint textureUnit, char
 	assert(!glGetError());
 }
 
-GLuint coBindOutputTexture(int M, int N, GLuint texture)
+GLuint coBindOutputTexture(int N, int M, GLuint texture)
 {
 	// set canvas and viewport size
 	glViewport(0, 0, N, M);
@@ -222,14 +222,14 @@ void coUnbindInputTexture(GLuint texture)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void *coReadData(int M, int N, void *d)
+void *coReadData(int N, int M, void *d)
 {
 	if (!d) d = malloc(4*M*N);
 	glReadPixels(0, 0, N, M, GL_RGBA, GL_UNSIGNED_BYTE, d);
 	return d; // M x N
 }
 
-float *coReadDataf(int M, int N, float *d)
+float *coReadDataf(int N, int M, float *d)
 {
 /*#ifdef GPGPU_USE_GLFW
 	if (!d) d = malloc(sizeof(float)*4*M*N);

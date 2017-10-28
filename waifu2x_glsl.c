@@ -295,6 +295,7 @@ void main()
 		sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
 	}
+	// Leaky ReLU
 	sum += bias[op];
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
@@ -314,7 +315,7 @@ void *recalloc(void *p, int s, int ss)
 
 void result(char *name, int w, int h)
 {
-	float *d = coReadDataf(h, w, 0);
+	float *d = coReadDataf(w, h, 0);
 /*	for (int i=0; i<h; i++) {
 		for (int j=0; j<w; j++) printf("%2.2f ", d[(i*w+j)*4]);
 		printf("\n");
@@ -352,31 +353,33 @@ int waifu2x_glsl(char *name, char *model)
 	stbi_image_free(pixels);
 	debug_s(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
 
-	unsigned char *p = malloc(256*256*3);
-	unsigned char *yuv = calloc(256*256*3/2, 1);
+//	unsigned char *p = malloc(256*256*3);
+//	unsigned char *yuv = calloc(256*256*3/2, 1);
 //	unsigned char *y = yuv;
 //	unsigned char *u = yuv +256*256;
 //	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
 	float *f = calloc(256*256*4, sizeof(float));
-//	float *u = calloc(256*256, sizeof(float));
-//	float *v = calloc(256*256, sizeof(float));
+	float *u = calloc(256*256, sizeof(float));
+	float *v = calloc(256*256, sizeof(float));
 	for (int y=0; y<256; y++) {
 		for (int x=0; x<256; x++) {
 			unsigned char r = pix[(y*w*2+x)*3];
 			unsigned char g = pix[(y*w*2+x)*3+1];
 			unsigned char b = pix[(y*w*2+x)*3+2];
-			p[(y*256+x)*3] = 0.299*r +0.587*g +0.114*b;
-			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
-			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
-			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
+//			p[(y*256+x)*3] = 0.299*r +0.587*g +0.114*b;
+//			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
+//			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
+//			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
 
 			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
+			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
+			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
 //			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
 //			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 		}
 	}
-	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
-	debug_s(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
+//	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
+//	debug_s(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
 	free(pix);
 
 	CatsEye cat;
@@ -390,10 +393,10 @@ int waifu2x_glsl(char *name, char *model)
 	coBindVertices(prog);
 
 	GLuint texture[3];
-	texture[0] = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
+	texture[0] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT);
 	coTransferData(texture[0], 0, 0, XSIZE, YSIZE, GL_FLOAT, f);
-	texture[1] = coCreateDataTexture(DATA_YSIZE, DATA_XSIZE, 0, GL_FLOAT);
-	texture[2] = coCreateDataTexture(KERNEL_H, KERNEL_W, cat.wdata, GL_FLOAT);
+	texture[1] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT);
+	texture[2] = coCreateDataTexture(KERNEL_W, KERNEL_H, cat.wdata, GL_FLOAT);
 	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	float ioffset[128/4*2];
@@ -413,14 +416,14 @@ int waifu2x_glsl(char *name, char *model)
 		int a = (cat.u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
 		int h = (a+15)/16;
-		printf("%d %d %dx%d %d %d\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i]);
+		printf("%d %d %dx%d %d %d %2.4f\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i], cat.bdata[cat.bs[i]]);
 
 		coUniform1i(prog, "INPUTPLANE", (cat.u[i].in+3)/4);
 		coUniform4fv(prog, "bias", a, &cat.bdata[cat.bs[i]]); coAssert();
 		coUniform2f(prog, "uvpos", (float)XSIZE*w/DATA_XSIZE, (float)YSIZE*h/DATA_YSIZE);
 		coUniform1f(prog, "wpos", (float)cat.ws[i]/4);
 		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
-		coBindOutputTexture(YSIZE*h, XSIZE*w, texture[r]);
+		coBindOutputTexture(XSIZE*w, YSIZE*h, texture[r]);
 		coCompute();
 		n ^= 1;	// swap
 		r ^= 1;
@@ -431,7 +434,7 @@ int waifu2x_glsl(char *name, char *model)
 #endif
 	}
 
-	float *d = coReadDataf(YSIZE, XSIZE, 0);
+	float *d = coReadDataf(XSIZE, YSIZE, 0);
 	unsigned char *o = calloc(XSIZE*YSIZE, 3);
 	for (int y=0; y<YSIZE; y++) {
 		for (int x=0; x<XSIZE; x++) {
@@ -446,11 +449,16 @@ int waifu2x_glsl(char *name, char *model)
 
 //			unsigned char yy = 255-d[(y*XSIZE+x)*4]*255;
 //			unsigned char yy = p[(y*256+x)*3];
-			unsigned char u = p[(y*256+x)*3+1];
+/*			unsigned char u = p[(y*256+x)*3+1];
 			unsigned char v = p[(y*256+x)*3+2];
 			o[(y*XSIZE+x)*3] = yy +1.402 *(v-128);
 			o[(y*XSIZE+x)*3+1] = yy -0.34414 *(u-128) -0.71414*(v-128);
-			o[(y*XSIZE+x)*3+2] = yy +1.772 *(u-128);
+			o[(y*XSIZE+x)*3+2] = yy +1.772 *(u-128);*/
+
+//			float yy = f[(y*256+x)*4] *255;
+			o[(y*XSIZE+x)*3]   = yy +1.402   *v[y*256+x];
+			o[(y*XSIZE+x)*3+1] = yy -0.34414 *u[y*256+x] -0.71414*v[y*256+x];
+			o[(y*XSIZE+x)*3+2] = yy +1.772   *u[y*256+x];
 
 /*			float yy = -255*d[(y*XSIZE+x)*4];
 			if (yy<0 || yy>255) printf("%2.2f ",yy);
@@ -463,9 +471,11 @@ int waifu2x_glsl(char *name, char *model)
 	free(o);
 	free(d);
 
-	free(yuv);
+	free(v);
+	free(u);
+//	free(yuv);
 	free(f);
-	free(p);
+//	free(p);
 
 	coTerm();
 	return 0;

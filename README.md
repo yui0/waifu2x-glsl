@@ -36,6 +36,7 @@ $ ./waifu2x_glsl nyanko.jpg -m vgg_7/art_y/noise3_model.json
 - https://github.com/yui0/catseye
 - Waifu2x
   - Original implementation: https://github.com/nagadomi/waifu2x
+  - https://github.com/kioku-systemk/waifu2x_webgl
   - https://github.com/ueshita/waifu2x-converter-glsl
   - https://stanko.github.io/super-resolution-image-resizer
 - GLSL
