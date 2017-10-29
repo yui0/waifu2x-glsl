@@ -152,7 +152,9 @@ void coBindVertices(GLuint prog)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vIndices), (void*)vIndices, GL_STATIC_DRAW);
 }
 
-GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type)
+#define GPGPU_TEX_PADDING	1
+#define GPGPU_TEX_REPEAT	2
+GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type, int flag)
 {
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -164,11 +166,13 @@ GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, /*GL_UNSIGNED_BYTE*/type, texels);
 #endif
 
+	GLuint clamp = GL_CLAMP_TO_EDGE;
+	if (flag & GPGPU_TEX_PADDING) clamp = GL_CLAMP_TO_BORDER;	// 0 padding
+	if (flag & GPGPU_TEX_REPEAT) clamp = GL_REPEAT;
+
 	// clamp to edge to support non-power of two textures
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// 0 padding
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp);
 	// don't interpolate when getting data from texture
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

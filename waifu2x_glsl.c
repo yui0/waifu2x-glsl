@@ -169,7 +169,7 @@ void main()
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-	pos[0] = arg * (wpos+ float(op* INPUTPLANE *9) +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (float(op* INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
@@ -300,6 +300,10 @@ void main()
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
 //	gl_FragColor = texture2D(X, a);
+	//gl_FragColor = texture2D(W, arg * (uv*uvpos*vec2(DATA_XSIZE,DATA_YSIZE) +wpos +0.5));
+	//gl_FragColor = texture2D(W, arg * 71496.5);
+	//gl_FragColor = texture2D(W, pos[0]);
+	//gl_FragColor = bias[op];
 }
 
 );
@@ -316,11 +320,11 @@ void *recalloc(void *p, int s, int ss)
 void result(char *name, int w, int h)
 {
 	float *d = coReadDataf(w, h, 0);
-/*	for (int i=0; i<h; i++) {
-		for (int j=0; j<w; j++) printf("%2.2f ", d[(i*w+j)*4]);
+	for (int i=0; i<8/*h*/; i++) {
+		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*w+j)*4]);
 		printf("\n");
 	}
-	printf("\n");*/
+	printf("\n");
 
 	unsigned char *o = calloc(w*h, 1);
 	for (int y=0; y<h; y++) {
@@ -393,10 +397,10 @@ int waifu2x_glsl(char *name, char *model)
 	coBindVertices(prog);
 
 	GLuint texture[3];
-	texture[0] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT);
+	texture[0] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT, 0);
 	coTransferData(texture[0], 0, 0, XSIZE, YSIZE, GL_FLOAT, f);
-	texture[1] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT);
-	texture[2] = coCreateDataTexture(KERNEL_W, KERNEL_H, cat.wdata, GL_FLOAT);
+	texture[1] = coCreateDataTexture(DATA_XSIZE, DATA_YSIZE, 0, GL_FLOAT, 0);
+	texture[2] = coCreateDataTexture(KERNEL_W, KERNEL_H, cat.wdata, GL_FLOAT, GPGPU_TEX_REPEAT);
 	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	float ioffset[128/4*2];
@@ -416,7 +420,7 @@ int waifu2x_glsl(char *name, char *model)
 		int a = (cat.u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
 		int h = (a+15)/16;
-		printf("%d %d %dx%d %d %d %2.4f\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i], cat.bdata[cat.bs[i]]);
+		printf("%d %d %dx%d %d %d %2.4f %2.4f\n", cat.u[i].in, cat.u[i].out, w, h, (cat.u[i].in+3)/4, cat.ws[i], cat.wdata[cat.ws[i]], cat.bdata[cat.bs[i]]);
 
 		coUniform1i(prog, "INPUTPLANE", (cat.u[i].in+3)/4);
 		coUniform4fv(prog, "bias", a, &cat.bdata[cat.bs[i]]); coAssert();
