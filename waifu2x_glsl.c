@@ -168,15 +168,15 @@ void main()
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-	pos[0] = arg * (float(op *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (float(op*4 *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
 	pos[3] = pos[2] + n;
 
 	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
-	/*if (INPUTPLANE==1) {
-		pos[0] = arg * (float(op *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
+	if (INPUTPLANE==1) {
+		pos[0] = arg * (float(op *9) +wpos +0.5);	// arg * (index+0.5)
 
 		vec4 p[9];
 		p[0] = texture2D(X, a + vec2(-xSize, -ySize));
@@ -215,7 +215,7 @@ void main()
 		sum.w += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
 		sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
-	} else*/ {
+	} else {
 		for (int i=0; i<INPUTPLANE; i++) {
 			vec2 tuv = a + inputOffset[i];
 			vec4 p[9];
