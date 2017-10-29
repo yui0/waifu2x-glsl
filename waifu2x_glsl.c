@@ -160,7 +160,6 @@ varying vec2 uv;
 void main()
 {
 	// calc uv pos [0-1, 0-1]
-//	vec2 a = uv*vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
 	vec2 a = uv*uvpos;
 	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
@@ -169,26 +168,26 @@ void main()
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
 	vec2 pos[4];
-	pos[0] = arg * (float(op* INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (float(op *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
 	pos[3] = pos[2] + n;
 
 	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
-	for (int i=0; i<INPUTPLANE; i++) {
-		vec2 tuv = a + inputOffset[i];
+	/*if (INPUTPLANE==1) {
+		pos[0] = arg * (float(op *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
 
 		vec4 p[9];
-		p[0] = texture2D(X, tuv + vec2(-xSize, -ySize));
-		p[1] = texture2D(X, tuv + vec2(   0.0, -ySize));
-		p[2] = texture2D(X, tuv + vec2( xSize, -ySize));
-		p[3] = texture2D(X, tuv + vec2(-xSize,    0.0));
-		p[4] = texture2D(X, tuv + vec2(   0.0,    0.0));
-		p[5] = texture2D(X, tuv + vec2( xSize,    0.0));
-		p[6] = texture2D(X, tuv + vec2(-xSize,  ySize));
-		p[7] = texture2D(X, tuv + vec2(   0.0,  ySize));
-		p[8] = texture2D(X, tuv + vec2( xSize,  ySize));
+		p[0] = texture2D(X, a + vec2(-xSize, -ySize));
+		p[1] = texture2D(X, a + vec2(   0.0, -ySize));
+		p[2] = texture2D(X, a + vec2( xSize, -ySize));
+		p[3] = texture2D(X, a + vec2(-xSize,    0.0));
+		p[4] = texture2D(X, a + vec2(   0.0,    0.0));
+		p[5] = texture2D(X, a + vec2( xSize,    0.0));
+		p[6] = texture2D(X, a + vec2(-xSize,  ySize));
+		p[7] = texture2D(X, a + vec2(   0.0,  ySize));
+		p[8] = texture2D(X, a + vec2( xSize,  ySize));
 
 		vec4 a[9];
 		a[0] = texture2D(W, pos[0]); pos[0] += arg;	// 1-4
@@ -205,105 +204,148 @@ void main()
 		sum.x += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
 		sum.x += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
 
-		sum.x += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
-		sum.x += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
-		sum.x += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
-
-		sum.x += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
-		sum.x += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
-		sum.x += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
-
-		sum.x += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
-		sum.x += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
-		sum.x += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
-
-		a[0] = texture2D(W, pos[1]); pos[1] += arg;	// 1-4
-		a[1] = texture2D(W, pos[1]); pos[1] += arg;	// 5-8
-		a[2] = texture2D(W, pos[1]); pos[1] += arg;	// 9-12
-		a[3] = texture2D(W, pos[1]); pos[1] += arg;	// 13-16
-		a[4] = texture2D(W, pos[1]); pos[1] += arg;	// 17-20
-		a[5] = texture2D(W, pos[1]); pos[1] += arg;	// 21-24
-		a[6] = texture2D(W, pos[1]); pos[1] += arg;	// 25-28
-		a[7] = texture2D(W, pos[1]); pos[1] += arg;	// 29-32
-		a[8] = texture2D(W, pos[1]); pos[1] += arg;	// 33-36
-
-		sum.y += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
-		sum.y += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
-		sum.y += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
-
 		sum.y += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
 		sum.y += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
 		sum.y += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
-
-		sum.y += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
-		sum.y += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
-		sum.y += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
-
-		sum.y += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
-		sum.y += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
-		sum.y += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
-
-		a[0] = texture2D(W, pos[2]); pos[2] += arg;	// 1-4
-		a[1] = texture2D(W, pos[2]); pos[2] += arg;	// 5-8
-		a[2] = texture2D(W, pos[2]); pos[2] += arg;	// 9-12
-		a[3] = texture2D(W, pos[2]); pos[2] += arg;	// 13-16
-		a[4] = texture2D(W, pos[2]); pos[2] += arg;	// 17-20
-		a[5] = texture2D(W, pos[2]); pos[2] += arg;	// 21-24
-		a[6] = texture2D(W, pos[2]); pos[2] += arg;	// 25-28
-		a[7] = texture2D(W, pos[2]); pos[2] += arg;	// 29-32
-		a[8] = texture2D(W, pos[2]); pos[2] += arg;	// 33-36
-
-		sum.z += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
-		sum.z += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
-		sum.z += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
-
-		sum.z += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
-		sum.z += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
-		sum.z += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
 
 		sum.z += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
 		sum.z += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
 		sum.z += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
 
-		sum.z += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
-		sum.z += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
-		sum.z += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
-
-		a[0] = texture2D(W, pos[3]); pos[3] += arg;	// 1-4
-		a[1] = texture2D(W, pos[3]); pos[3] += arg;	// 5-8
-		a[2] = texture2D(W, pos[3]); pos[3] += arg;	// 9-12
-		a[3] = texture2D(W, pos[3]); pos[3] += arg;	// 13-16
-		a[4] = texture2D(W, pos[3]); pos[3] += arg;	// 17-20
-		a[5] = texture2D(W, pos[3]); pos[3] += arg;	// 21-24
-		a[6] = texture2D(W, pos[3]); pos[3] += arg;	// 25-28
-		a[7] = texture2D(W, pos[3]); pos[3] += arg;	// 29-32
-		a[8] = texture2D(W, pos[3]); pos[3] += arg;	// 33-36
-
-		sum.w += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
-		sum.w += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
-		sum.w += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
-
-		sum.w += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
-		sum.w += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
-		sum.w += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
-
-		sum.w += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
-		sum.w += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
-		sum.w += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
-
 		sum.w += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
 		sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+	} else*/ {
+		for (int i=0; i<INPUTPLANE; i++) {
+			vec2 tuv = a + inputOffset[i];
+			vec4 p[9];
+			p[0] = texture2D(X, tuv + vec2(-xSize, -ySize));
+			p[1] = texture2D(X, tuv + vec2(   0.0, -ySize));
+			p[2] = texture2D(X, tuv + vec2( xSize, -ySize));
+			p[3] = texture2D(X, tuv + vec2(-xSize,    0.0));
+			p[4] = texture2D(X, tuv + vec2(   0.0,    0.0));
+			p[5] = texture2D(X, tuv + vec2( xSize,    0.0));
+			p[6] = texture2D(X, tuv + vec2(-xSize,  ySize));
+			p[7] = texture2D(X, tuv + vec2(   0.0,  ySize));
+			p[8] = texture2D(X, tuv + vec2( xSize,  ySize));
+
+			vec4 a[9];
+			a[0] = texture2D(W, pos[0]); pos[0] += arg;	// 1-4
+			a[1] = texture2D(W, pos[0]); pos[0] += arg;	// 5-8
+			a[2] = texture2D(W, pos[0]); pos[0] += arg;	// 9-12
+			a[3] = texture2D(W, pos[0]); pos[0] += arg;	// 13-16
+			a[4] = texture2D(W, pos[0]); pos[0] += arg;	// 17-20
+			a[5] = texture2D(W, pos[0]); pos[0] += arg;	// 21-24
+			a[6] = texture2D(W, pos[0]); pos[0] += arg;	// 25-28
+			a[7] = texture2D(W, pos[0]); pos[0] += arg;	// 29-32
+			a[8] = texture2D(W, pos[0]); pos[0] += arg;	// 33-36
+
+			sum.x += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
+			sum.x += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
+			sum.x += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
+
+			sum.x += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
+			sum.x += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
+			sum.x += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
+
+			sum.x += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
+			sum.x += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
+			sum.x += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
+
+			sum.x += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
+			sum.x += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
+			sum.x += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+
+			a[0] = texture2D(W, pos[1]); pos[1] += arg;	// 1-4
+			a[1] = texture2D(W, pos[1]); pos[1] += arg;	// 5-8
+			a[2] = texture2D(W, pos[1]); pos[1] += arg;	// 9-12
+			a[3] = texture2D(W, pos[1]); pos[1] += arg;	// 13-16
+			a[4] = texture2D(W, pos[1]); pos[1] += arg;	// 17-20
+			a[5] = texture2D(W, pos[1]); pos[1] += arg;	// 21-24
+			a[6] = texture2D(W, pos[1]); pos[1] += arg;	// 25-28
+			a[7] = texture2D(W, pos[1]); pos[1] += arg;	// 29-32
+			a[8] = texture2D(W, pos[1]); pos[1] += arg;	// 33-36
+
+			sum.y += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
+			sum.y += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
+			sum.y += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
+
+			sum.y += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
+			sum.y += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
+			sum.y += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
+
+			sum.y += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
+			sum.y += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
+			sum.y += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
+
+			sum.y += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
+			sum.y += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
+			sum.y += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+
+			a[0] = texture2D(W, pos[2]); pos[2] += arg;	// 1-4
+			a[1] = texture2D(W, pos[2]); pos[2] += arg;	// 5-8
+			a[2] = texture2D(W, pos[2]); pos[2] += arg;	// 9-12
+			a[3] = texture2D(W, pos[2]); pos[2] += arg;	// 13-16
+			a[4] = texture2D(W, pos[2]); pos[2] += arg;	// 17-20
+			a[5] = texture2D(W, pos[2]); pos[2] += arg;	// 21-24
+			a[6] = texture2D(W, pos[2]); pos[2] += arg;	// 25-28
+			a[7] = texture2D(W, pos[2]); pos[2] += arg;	// 29-32
+			a[8] = texture2D(W, pos[2]); pos[2] += arg;	// 33-36
+
+			sum.z += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
+			sum.z += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
+			sum.z += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
+
+			sum.z += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
+			sum.z += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
+			sum.z += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
+
+			sum.z += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
+			sum.z += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
+			sum.z += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
+
+			sum.z += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
+			sum.z += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
+			sum.z += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+
+			a[0] = texture2D(W, pos[3]); pos[3] += arg;	// 1-4
+			a[1] = texture2D(W, pos[3]); pos[3] += arg;	// 5-8
+			a[2] = texture2D(W, pos[3]); pos[3] += arg;	// 9-12
+			a[3] = texture2D(W, pos[3]); pos[3] += arg;	// 13-16
+			a[4] = texture2D(W, pos[3]); pos[3] += arg;	// 17-20
+			a[5] = texture2D(W, pos[3]); pos[3] += arg;	// 21-24
+			a[6] = texture2D(W, pos[3]); pos[3] += arg;	// 25-28
+			a[7] = texture2D(W, pos[3]); pos[3] += arg;	// 29-32
+			a[8] = texture2D(W, pos[3]); pos[3] += arg;	// 33-36
+
+			sum.w += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
+			sum.w += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
+			sum.w += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
+
+			sum.w += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
+			sum.w += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
+			sum.w += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
+
+			sum.w += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
+			sum.w += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
+			sum.w += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
+
+			sum.w += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
+			sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
+			sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+		}
 	}
 	// Leaky ReLU
 	sum += bias[op];
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
 	gl_FragColor = sum;
 //	gl_FragColor = texture2D(X, a);
-	//gl_FragColor = texture2D(W, arg * (uv*uvpos*vec2(DATA_XSIZE,DATA_YSIZE) +wpos +0.5));
+//	if (op==2) gl_FragColor = texture2D(X, a+inputOffset[31]);
 	//gl_FragColor = texture2D(W, arg * 71496.5);
 	//gl_FragColor = texture2D(W, pos[0]);
+	//gl_FragColor = texture2D(W, pos[1]);
 	//gl_FragColor = bias[op];
+	//if (op==16) gl_FragColor = vec4(1.,1.,1.,1.);	// 3,16
 }
 
 );
@@ -357,8 +399,6 @@ int waifu2x_glsl(char *name, char *model)
 	stbi_image_free(pixels);
 	debug_s(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
 
-//	unsigned char *p = malloc(256*256*3);
-//	unsigned char *yuv = calloc(256*256*3/2, 1);
 //	unsigned char *y = yuv;
 //	unsigned char *u = yuv +256*256;
 //	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
@@ -370,10 +410,6 @@ int waifu2x_glsl(char *name, char *model)
 			unsigned char r = pix[(y*w*2+x)*3];
 			unsigned char g = pix[(y*w*2+x)*3+1];
 			unsigned char b = pix[(y*w*2+x)*3+2];
-//			p[(y*256+x)*3] = 0.299*r +0.587*g +0.114*b;
-//			p[(y*256+x)*3+1] = -0.1687*r -0.3313*g +0.500*b +128;
-//			p[(y*256+x)*3+2] = 0.500*r -0.4187*g -0.0813*b +128;
-//			yuv[y*256+x] = 0.299*r +0.587*g +0.114*b;
 
 			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
 			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
@@ -407,8 +443,6 @@ int waifu2x_glsl(char *name, char *model)
 	for (int i=0; i<128/4; i++) {
 		ioffset[i*2] = (i % 16) / 16.0;
 		ioffset[i*2+1] = floor(i / 16.0) / 8.0;
-//		ioffset[i*2] = (i % 16) / 16.0 +0.5/DATA_XSIZE;
-//		ioffset[i*2+1] = floor(i / 16.0) / 8.0 +0.5/DATA_XSIZE;
 		//printf("%f %f\n", ioffset[i*2], ioffset[i*2+1]);
 	}
 	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
@@ -442,22 +476,10 @@ int waifu2x_glsl(char *name, char *model)
 	unsigned char *o = calloc(XSIZE*YSIZE, 3);
 	for (int y=0; y<YSIZE; y++) {
 		for (int x=0; x<XSIZE; x++) {
-			//int yy = (d[(y*XSIZE+x)*4]+1.0)*255;
+//			int yy = d[(y*XSIZE+x)*4]*255;
 			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
 			int yy = -196*d[(y*XSIZE+x)*4];
 			if (yy<0 || yy>255) printf("%d ",yy);
-/*			yy = yy<0 ? 0: yy>255 ? 255: yy;
-			o[(y*XSIZE+x)*3] = yy;
-			o[(y*XSIZE+x)*3+1] = yy;
-			o[(y*XSIZE+x)*3+2] = yy;*/
-
-//			unsigned char yy = 255-d[(y*XSIZE+x)*4]*255;
-//			unsigned char yy = p[(y*256+x)*3];
-/*			unsigned char u = p[(y*256+x)*3+1];
-			unsigned char v = p[(y*256+x)*3+2];
-			o[(y*XSIZE+x)*3] = yy +1.402 *(v-128);
-			o[(y*XSIZE+x)*3+1] = yy -0.34414 *(u-128) -0.71414*(v-128);
-			o[(y*XSIZE+x)*3+2] = yy +1.772 *(u-128);*/
 
 //			float yy = f[(y*256+x)*4] *255;
 			o[(y*XSIZE+x)*3]   = yy +1.402   *v[y*256+x];
@@ -477,9 +499,7 @@ int waifu2x_glsl(char *name, char *model)
 
 	free(v);
 	free(u);
-//	free(yuv);
 	free(f);
-//	free(p);
 
 	coTerm();
 	return 0;
