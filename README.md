@@ -1,6 +1,7 @@
 # waifu2x-glsl
 
-waifu2x converter GPU Optimization in OpenGL Shader
+Fast waifu2x converter with GPU optimization.
+Using GLSL.
 
 ## Platform
 
