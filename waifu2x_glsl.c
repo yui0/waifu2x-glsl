@@ -198,23 +198,23 @@ void main()
 		a[5] = texture2D(W, pos[0]); pos[0] += arg;	// 21-24
 		a[6] = texture2D(W, pos[0]); pos[0] += arg;	// 25-28
 		a[7] = texture2D(W, pos[0]); pos[0] += arg;	// 29-32
-		a[8] = texture2D(W, pos[0]); pos[0] += arg;	// 33-36
+		a[8] = texture2D(W, pos[0]);			// 33-36
 
 		sum.x += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
 		sum.x += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
 		sum.x += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
 
-		sum.y += dot(vec3(p[0].y, p[1].y, p[2].y), a[2].yzw);
-		sum.y += dot(vec3(p[3].y, p[4].y, p[5].y), a[3].xyz);
-		sum.y += dot(vec3(p[6].y, p[7].y, p[8].y), vec3(a[3].w, a[4].x, a[4].y));
+		sum.y += dot(vec3(p[0].x, p[1].x, p[2].x), a[2].yzw);
+		sum.y += dot(vec3(p[3].x, p[4].x, p[5].x), a[3].xyz);
+		sum.y += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[3].w, a[4].x, a[4].y));
 
-		sum.z += dot(vec3(p[0].z, p[1].z, p[2].z), vec3(a[4].z, a[4].w, a[5].x));
-		sum.z += dot(vec3(p[3].z, p[4].z, p[5].z), a[5].yzw);
-		sum.z += dot(vec3(p[6].z, p[7].z, p[8].z), a[6].xyz);
+		sum.z += dot(vec3(p[0].x, p[1].x, p[2].x), vec3(a[4].z, a[4].w, a[5].x));
+		sum.z += dot(vec3(p[3].x, p[4].x, p[5].x), a[5].yzw);
+		sum.z += dot(vec3(p[6].x, p[7].x, p[8].x), a[6].xyz);
 
-		sum.w += dot(vec3(p[0].w, p[1].w, p[2].w), vec3(a[6].w, a[7].x, a[7].y));
-		sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
-		sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
+		sum.w += dot(vec3(p[0].x, p[1].x, p[2].x), vec3(a[6].w, a[7].x, a[7].y));
+		sum.w += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[7].z, a[7].w, a[8].x));
+		sum.w += dot(vec3(p[6].x, p[7].x, p[8].x), a[8].yzw);
 	} else {
 		for (int i=0; i<INPUTPLANE; i++) {
 			vec2 tuv = a + inputOffset[i];
@@ -372,6 +372,7 @@ void result(char *name, int w, int h)
 	for (int y=0; y<h; y++) {
 		for (int x=0; x<w; x++) {
 			o[y*w+x] = d[(y*w+x)*4]*255;
+			//o[y*w+x] = d[(y*w+x)*4+1]*255;
 		}
 	}
 	stbi_write_png(name, w, h, 1, o, 0);
@@ -478,7 +479,8 @@ int waifu2x_glsl(char *name, char *model)
 		for (int x=0; x<XSIZE; x++) {
 //			int yy = d[(y*XSIZE+x)*4]*255;
 			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
-			int yy = -196*d[(y*XSIZE+x)*4];
+//			int yy = -196*d[(y*XSIZE+x)*4];
+			int yy = 190*d[(y*XSIZE+x)*4];
 			if (yy<0 || yy>255) printf("%d ",yy);
 
 //			float yy = f[(y*256+x)*4] *255;
