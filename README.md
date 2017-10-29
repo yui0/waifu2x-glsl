@@ -17,7 +17,7 @@ $ make
 ## Usage
 
 ```bash
-$ ./waifu2x_glsl nyanko.jpg
+$ ./waifu2x_glsl nyanko.jpg -s 1.0
 $ ./waifu2x_glsl nyanko.jpg -m vgg_7/art_y/noise3_model.json 
 ```
 

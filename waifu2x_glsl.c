@@ -359,14 +359,23 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
+#define DEBUG
+#ifdef DEBUG
+#define debug_s(x)	{x;}
+#else
+#define debug_s(x)
+#endif
+
 void result(char *name, int w, int h)
 {
 	float *d = coReadDataf(w, h, 0);
+#ifdef DEBUG
 	for (int i=0; i<8/*h*/; i++) {
 		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*w+j)*4]);
 		printf("\n");
 	}
 	printf("\n");
+#endif
 
 	unsigned char *o = calloc(w*h, 1);
 	for (int y=0; y<h; y++) {
@@ -380,14 +389,7 @@ void result(char *name, int w, int h)
 	free(d);
 }
 
-#define DEBUG
-#ifdef DEBUG
-#define debug_s(x)	{x;}
-#else
-#define debug_s(x)
-#endif
-
-int waifu2x_glsl(char *name, char *model)
+int waifu2x_glsl(char *name, char *model, float scale)
 {
 	unsigned char *pixels;
 	int w, h, bpp;
@@ -395,22 +397,22 @@ int waifu2x_glsl(char *name, char *model)
 	printf("%s %dx%d %d\n", name, w, h, bpp);
 	bpp = 3;
 
-	unsigned char *pix = malloc(w*2*h*2*bpp);
-	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, w*2, h*2, 0, bpp, -1, 0);
-	stbi_image_free(pixels);
-	debug_s(stbi_write_jpg("output.jpg", w*2, h*2, bpp, pix, 0));
+	int sx = w * scale;
+	int sy = h * scale;
 
-//	unsigned char *y = yuv;
-//	unsigned char *u = yuv +256*256;
-//	unsigned char *v = yuv +256*256 +((256+1)/2)*((256+1)/2);
+	unsigned char *pix = malloc(sx*sy*bpp);
+	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, sx, sy, 0, bpp, -1, 0);
+	stbi_image_free(pixels);
+	debug_s(stbi_write_jpg("output.jpg", sx, sy, bpp, pix, 0));
+
 	float *f = calloc(256*256*4, sizeof(float));
 	float *u = calloc(256*256, sizeof(float));
 	float *v = calloc(256*256, sizeof(float));
 	for (int y=0; y<256; y++) {
 		for (int x=0; x<256; x++) {
-			unsigned char r = pix[(y*w*2+x)*3];
-			unsigned char g = pix[(y*w*2+x)*3+1];
-			unsigned char b = pix[(y*w*2+x)*3+2];
+			unsigned char r = pix[(y*sx+x)*3];
+			unsigned char g = pix[(y*sx+x)*3+1];
+			unsigned char b = pix[(y*sx+x)*3+2];
 
 			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
 			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
@@ -511,11 +513,12 @@ int main(int argc, char* argv[])
 {
 	char *name;
 	char *model = "noise1_model.json";
+	float scale = 2.0;
 	struct parg_state ps;
 	int c;
 
 	parg_init(&ps);
-	while ((c = parg_getopt(&ps, argc, argv, "hm:")) != -1) {
+	while ((c = parg_getopt(&ps, argc, argv, "hm:s:")) != -1) {
 		switch (c) {
 		case 1:
 			name = (char*)ps.optarg;
@@ -523,13 +526,16 @@ int main(int argc, char* argv[])
 		case 'm':
 			model = (char*)ps.optarg;
 			break;
+		case 's':
+			scale = atof(ps.optarg);
+			break;
 		case 'h':
 		default:
 //			usage(stderr, argc, argv);
 			return 1;
 		}
 	}
-	waifu2x_glsl(name, model);
+	waifu2x_glsl(name, model, scale);
 
 	return 0;
 }
