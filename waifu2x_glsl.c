@@ -408,8 +408,12 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	float *f = calloc(256*256*4, sizeof(float));
 	float *u = calloc(256*256, sizeof(float));
 	float *v = calloc(256*256, sizeof(float));
-	for (int y=0; y<256; y++) {
-		for (int x=0; x<256; x++) {
+	int width = 256;
+	int height = 256;
+	if (sx<256) width = sx;
+	if (sy<256) height = sy;
+	for (int y=0; y<height; y++) {
+		for (int x=0; x<width; x++) {
 			unsigned char r = pix[(y*sx+x)*3];
 			unsigned char g = pix[(y*sx+x)*3+1];
 			unsigned char b = pix[(y*sx+x)*3+2];
