@@ -7,6 +7,7 @@
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
 #include <stdlib.h>
 #include "gpgpu_glsl.h"
+#include "clock.h"
 
 #define PARG_IMPLEMENTATION
 #include "parg.h"
@@ -454,6 +455,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	}
 	coUniform2fv(prog, "inputOffset", 128/4, ioffset);
 
+	clock_start();
 	int n = 0;
 	int r = 1;
 	for (int i=0; i<cat.layers; i++) {
@@ -477,6 +479,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 		result(buff, XSIZE*w, YSIZE*h);
 #endif
 	}
+	clock_end();
 
 	float *d = coReadDataf(XSIZE, YSIZE, 0);
 	unsigned char *o = calloc(XSIZE*YSIZE, 3);
