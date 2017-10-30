@@ -5,9 +5,9 @@ Using GLSL.
 
 ## Platform
 
-- Linux
-- Mac OS X
-- Windows
+- Linux with GLFW
+- macOS with GLFW
+- Windows with GLFW
 
 ## How to build
 

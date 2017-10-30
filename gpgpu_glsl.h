@@ -5,29 +5,36 @@
 //---------------------------------------------------------
 
 #define GPGPU_USE_GLFW
-
-#ifdef GPGPU_USE_GLFW
-
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 #endif
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glext.h>
+#define GLFW_INCLUDE_GLU
 
-#else
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GLES3/gl32.h>
-#include <GLES3/gl3ext.h>
-//#define GL_CLAMP_TO_BORDER	GL_CLAMP_TO_BORDER_OES
+#ifdef _WIN32
+	#include <windows.h>
+	#include <GL/gl.h>
+#elif __APPLE__
+	#include <OpenGL/gl3.h>
+	//#include <OpenGL/glu.h>
+	//#include <OpenGL/glext.h>
+	#include <GLFW/glfw3.h>
+#elif __linux
+	#ifdef GPGPU_USE_GLFW
+		#include <GL/gl.h>
+		//#include <GL/glu.h>
+		//#include <GL/glext.h>
+		#include <GLFW/glfw3.h>
+	#else
+		#include <EGL/egl.h>
+		#include <EGL/eglext.h>
+		#include <GLES3/gl32.h>
+		#include <GLES3/gl3ext.h>
+		//#define GL_CLAMP_TO_BORDER	GL_CLAMP_TO_BORDER_OES
+	#endif
 #endif
 
 #include <assert.h>
 #include <fcntl.h>
-#include <gbm.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -163,7 +170,7 @@ GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type, int flag)
 #ifdef GPGPU_USE_GLFW
 	glTexImage2D(GL_TEXTURE_2D, 0, (type==GL_FLOAT ? GL_RGBA32F : GL_RGBA), w, h, 0, GL_RGBA, type, texels);
 #else
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, /*GL_UNSIGNED_BYTE*/type, texels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, type, texels);
 #endif
 
 	GLuint clamp = GL_CLAMP_TO_EDGE;
@@ -304,15 +311,13 @@ float *coReadDataf(int N, int M, float *d)
 #endif
 
 #ifdef GPGPU_USE_GLFW
-#define GLFW_INCLUDE_GLU
-#include <GLFW/glfw3.h>
 void coInit()
 {
 	GLFWwindow* window;
 	assert(glfwInit() != 0);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+//	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+//	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+//	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_VISIBLE, 0);
 	window = glfwCreateWindow(320, 240, "Catgl", 0, 0);
 	if (!window) {
