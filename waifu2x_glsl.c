@@ -138,7 +138,7 @@ precision highp float;
 #define xSize		1./DATA_XSIZE.
 #define ySize		1./DATA_YSIZE.
 
-uniform int INPUTPLANE;	// INPUTPLANE/4
+uniform int INPUTPLANE;	// /4
 uniform vec2 inputOffset[128/4];
 uniform vec2 uvpos;
 uniform float wpos;
@@ -394,12 +394,12 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	unsigned char *pixels;
 	int w, h, bpp;
 	pixels = stbi_load(name, &w, &h, &bpp, 3);
+	assert(pixels);
 	printf("%s %dx%d %d\n", name, w, h, bpp);
 	bpp = 3;
 
 	int sx = w * scale;
 	int sy = h * scale;
-
 	unsigned char *pix = malloc(sx*sy*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, sx, sy, 0, bpp, -1, 0);
 	stbi_image_free(pixels);
@@ -426,7 +426,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	free(pix);
 
 	CatsEye cat;
-	CatsEye_loadJson(&cat, model);
+	assert(!CatsEye_loadJson(&cat, model));
 	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4);
 	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
 
@@ -452,7 +452,6 @@ int waifu2x_glsl(char *name, char *model, float scale)
 
 	int n = 0;
 	int r = 1;
-	//printf("%d\n", cat.layers);
 	for (int i=0; i<cat.layers; i++) {
 		int a = (cat.u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
@@ -514,9 +513,9 @@ int main(int argc, char* argv[])
 	char *name;
 	char *model = "noise1_model.json";
 	float scale = 2.0;
+
 	struct parg_state ps;
 	int c;
-
 	parg_init(&ps);
 	while ((c = parg_getopt(&ps, argc, argv, "hm:s:")) != -1) {
 		switch (c) {
