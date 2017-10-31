@@ -492,9 +492,6 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	unsigned char *o = calloc(XSIZE*YSIZE, 3);
 	for (int y=0; y<YSIZE; y++) {
 		for (int x=0; x<XSIZE; x++) {
-//			int yy = 256*d[(y*XSIZE+x)*4];
-//			if (yy<0 || yy>255) printf("%d ",yy);
-
 //			float yy = f[(y*256+x)*4];
 			float yy = d[(y*256+x)*4]*256.0;
 //			o[(y*XSIZE+x)*3]   = (yy                     +1.402  *v[y*256+x]);
@@ -525,6 +522,18 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	return 0;
 }
 
+void usage(FILE* fp, int argc, char** argv)
+{
+	fprintf(fp,
+		"Usage: %s [options] file\n\n"
+		"Options:\n"
+		"-h                 Print this message\n"
+		"-m <model name>    waifu2x model name [noise2_model.json...]\n"
+		"-s <scale>         Magnification [1.0, 1.6, 2.0...]\n"
+		"\n",
+		argv[0]);
+}
+
 int main(int argc, char* argv[])
 {
 	char *name;
@@ -547,7 +556,7 @@ int main(int argc, char* argv[])
 			break;
 		case 'h':
 		default:
-//			usage(stderr, argc, argv);
+			usage(stderr, argc, argv);
 			return 1;
 		}
 	}

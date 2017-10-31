@@ -15,11 +15,19 @@ Using GLSL.
 $ make
 ```
 
-## Usage
+## How to use
 
 ```bash
-$ ./waifu2x_glsl nyanko.jpg -s 1.0
-$ ./waifu2x_glsl nyanko.jpg -m vgg_7/art_y/noise3_model.json 
+$ ./waifu2x_glsl -h
+Usage: ./waifu2x_glsl [options] file
+
+Options:
+-h                 Print this message
+-m <model name>    waifu2x model name [noise2_model.json...]
+-s <scale>         Magnification [1.0, 1.6, 2.0...]
+
+$ ./waifu2x_glsl -s 1.0 nyanko.jpg
+$ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 ```
 
 ## How to work
@@ -35,11 +43,13 @@ $ ./waifu2x_glsl nyanko.jpg -m vgg_7/art_y/noise3_model.json
 ## References
 
 - https://github.com/yui0/catseye
+- (Image Super-Resolution Using Deep Convolutional Networks)[http://arxiv.org/abs/1501.00092]
 - Waifu2x
   - Original implementation: https://github.com/nagadomi/waifu2x
   - https://github.com/kioku-systemk/waifu2x_webgl
   - https://github.com/ueshita/waifu2x-converter-glsl
   - https://stanko.github.io/super-resolution-image-resizer
+  - https://www.slideshare.net/KosukeNakago/seranet
 - GLSL
   - https://github.com/transcranial/keras-js/tree/master/src/webgl
   - https://github.com/scienceai/neocortex/blob/master/src/lib/webgl/matmul_fragment_shader.glsl
