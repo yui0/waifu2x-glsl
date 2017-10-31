@@ -363,7 +363,7 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define debug_s(x)	{x;}
 #else
@@ -393,18 +393,7 @@ void result(char *name, int w, int h)
 	free(d);
 }
 
-/*typedef struct {
-	CatsEye cat;
-
-	GLuint prog;
-	GLuint texture[3];
-
-	float *yuv;
-	float *u;
-	float *v;
-} waifu2x_glsl;*/
-
-void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, uint8_t *s, int sx, int sy, uint8_t *p, int ox, int oy, int wx, int wy)
+void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, uint8_t *s, int sx, int sy, uint8_t *p, int wx)
 {
 	float *u = yuv + 256*256*4;
 	float *v = yuv + 256*256*5;
@@ -459,16 +448,19 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 	clock_end();
 
 	float *d = coReadDataf(XSIZE, YSIZE, 0);
-	for (int y=0; y<YSIZE; y++) {
-		for (int x=0; x<XSIZE; x++) {
+	for (int y=0; y<YSIZE-3; y++) {
+		for (int x=0; x<XSIZE-6; x++) {
 //			float yy = yuv[(y*256+x)*4];
 			float yy = d[(y*256+x)*4]*256.0;
 			int r = yy                     +1.402  *v[y*256+x];
 			int g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
 			int b = yy +1.772  *u[y*256+x];
-			p[(y*wx+x)*3]   = r>255 ? 255 : r<0 ? 0 : r;
-			p[(y*wx+x)*3+1] = g>255 ? 255 : g<0 ? 0 : g;
-			p[(y*wx+x)*3+2] = b>255 ? 255 : b<0 ? 0 : b;
+			uint8_t *pix = &p[(y*wx+x)*3];
+			if (!pix[0] || !pix[1] || !pix[2]) {
+				pix[0] = r>255 ? 255 : r<0 ? 0 : r;
+				pix[1] = g>255 ? 255 : g<0 ? 0 : g;
+				pix[2] = b>255 ? 255 : b<0 ? 0 : b;
+			}
 
 //			p[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
 //			p[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
@@ -518,12 +510,22 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	texture[2] = coCreateDataTexture(KERNEL_W, KERNEL_H, cat.wdata, GL_FLOAT, GPGPU_TEX_REPEAT);
 //	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
-	uint8_t *o = calloc(XSIZE*YSIZE, 3);
 	float *yuv = calloc(256*256*(4+2), sizeof(float));
-	waifu2x_glsl_run(&cat, prog, texture, yuv, pix, sx, sy, o, 0, 0, 256, 256);
-	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
-	free(yuv);
+//	uint8_t *o = calloc(XSIZE*YSIZE, 3);
+//	waifu2x_glsl_run(&cat, prog, texture, yuv, pix, sx, sy, o, 256);
+//	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
+	uint8_t *o = calloc(sx*sy, 3);
+	for (int y=0; y<sy; y+=256-3) {
+		for (int x=0; x<sx; x+=256-6) {
+			int ox = x+256-6 > sx ? sx-(256-6) : x;
+			int oy = y+256-3 > sy ? sy-(256-3) : y;
+			printf("%d %d\n",ox,oy);
+			waifu2x_glsl_run(&cat, prog, texture, yuv, pix+(ox+oy*sx)*3, sx, sy, o+(ox+oy*sx)*3, sx);
+		}
+	}
+	stbi_write_png("output2x.png", sx, sy, 3, o, 0);
 	free(o);
+	free(yuv);
 	free(pix);
 
 	coTerm();
