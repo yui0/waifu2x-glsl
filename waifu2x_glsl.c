@@ -164,7 +164,6 @@ void main()
 	vec2 a = uv*uvpos;
 //	vec2 a = uv*uvpos -vec2(xSize/2., ySize/2.);
 //	vec2 a = (uv+vec2(xSize/2., ySize/2.))*uvpos;
-//	vec2 a = (uv+vec2(xSize/4., ySize/4.))*uvpos;
 	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
 	int op = int(oplane.x + oplane.y*16.);
@@ -418,20 +417,20 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	if (sy<256) height = sy;
 	for (int y=0; y<height; y++) {
 		for (int x=0; x<width; x++) {
-//			unsigned char r = pix[(y*sx+x)*3];
-//			unsigned char g = pix[(y*sx+x)*3+1];
-//			unsigned char b = pix[(y*sx+x)*3+2];
+			unsigned char r = pix[(y*sx+x)*3];
+			unsigned char g = pix[(y*sx+x)*3+1];
+			unsigned char b = pix[(y*sx+x)*3+2];
 
-//			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
-//			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
-//			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
+//			float r = pix[(y*sx+x)*3] /256.0;
+//			float g = pix[(y*sx+x)*3+1] /256.0;
+//			float b = pix[(y*sx+x)*3+2] /256.0;
 
-			float r = pix[(y*sx+x)*3] /256.0;
-			float g = pix[(y*sx+x)*3+1] /256.0;
-			float b = pix[(y*sx+x)*3+2] /256.0;
-			f[(y*256+x)*4] = (0.299*r +0.587*g +0.114*b);	// CCIR Rec.601
-			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
-			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
+			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
+			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
+//			f[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
+//			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+//			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -482,7 +481,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 		n ^= 1;	// swap
 		r ^= 1;
 #ifdef DEBUG
-		char *buff[256];
+		char buff[256];
 		sprintf(buff, "output2x_%02d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
 #endif
@@ -493,21 +492,25 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	unsigned char *o = calloc(XSIZE*YSIZE, 3);
 	for (int y=0; y<YSIZE; y++) {
 		for (int x=0; x<XSIZE; x++) {
-//			int yy = d[(y*XSIZE+x)*4]*255;
-			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
-//			int yy = -196*d[(y*XSIZE+x)*4];
-//			int yy = 190*d[(y*XSIZE+x)*4];
 //			int yy = 256*d[(y*XSIZE+x)*4];
 //			if (yy<0 || yy>255) printf("%d ",yy);
 
-			float yy = f[(y*256+x)*4];
-//			o[(y*XSIZE+x)*3]   = yy +1.402   *v[y*256+x];
-//			o[(y*XSIZE+x)*3+1] = yy -0.34414 *u[y*256+x] -0.71414*v[y*256+x];
-//			o[(y*XSIZE+x)*3+2] = yy +1.772   *u[y*256+x];
+//			float yy = f[(y*256+x)*4];
+			float yy = d[(y*256+x)*4]*256.0;
+//			o[(y*XSIZE+x)*3]   = (yy                     +1.402  *v[y*256+x]);
+//			o[(y*XSIZE+x)*3+1] = (yy -0.34414*u[y*256+x] -0.71414*v[y*256+x]);
+//			o[(y*XSIZE+x)*3+2] = (yy +1.772  *u[y*256+x]);
 
-			o[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
-			o[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
-			o[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
+			float r = yy                     +1.402  *v[y*256+x];
+			float g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
+			float b = yy +1.772  *u[y*256+x];
+			o[(y*XSIZE+x)*3]   = r>255 ? 255 : r<0 ? 0 : r;
+			o[(y*XSIZE+x)*3+1] = g>255 ? 255 : g<0 ? 0 : g;
+			o[(y*XSIZE+x)*3+2] = b>255 ? 255 : b<0 ? 0 : b;
+
+//			o[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
+//			o[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
+//			o[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
 		}
 	}
 	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
