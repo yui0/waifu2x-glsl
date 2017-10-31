@@ -5,9 +5,9 @@ Using GLSL.
 
 ## Platform
 
-- Linux with GLFW
-- macOS with GLFW
-- Windows with GLFW
+- Linux
+- macOS
+- Windows
 
 ## How to build
 
@@ -43,7 +43,7 @@ $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 ## References
 
 - https://github.com/yui0/catseye
-- (Image Super-Resolution Using Deep Convolutional Networks)[http://arxiv.org/abs/1501.00092]
+- [Image Super-Resolution Using Deep Convolutional Networks](http://arxiv.org/abs/1501.00092)
 - Waifu2x
   - Original implementation: https://github.com/nagadomi/waifu2x
   - https://github.com/kioku-systemk/waifu2x_webgl
