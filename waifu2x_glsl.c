@@ -162,6 +162,9 @@ void main()
 {
 	// calc uv pos [0-1, 0-1]
 	vec2 a = uv*uvpos;
+//	vec2 a = uv*uvpos -vec2(xSize/2., ySize/2.);
+//	vec2 a = (uv+vec2(xSize/2., ySize/2.))*uvpos;
+//	vec2 a = (uv+vec2(xSize/4., ySize/4.))*uvpos;
 	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
 	int op = int(oplane.x + oplane.y*16.);
@@ -201,11 +204,11 @@ void main()
 		a[7] = texture2D(W, pos[0]); pos[0] += arg;	// 29-32
 		a[8] = texture2D(W, pos[0]);			// 33-36
 
-		sum.x += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);
+		sum.x += dot(vec3(p[0].x, p[1].x, p[2].x), a[0].xyz);	// out 1
 		sum.x += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[0].w, a[1].x, a[1].y));
 		sum.x += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[1].z, a[1].w, a[2].x));
 
-		sum.y += dot(vec3(p[0].x, p[1].x, p[2].x), a[2].yzw);
+		sum.y += dot(vec3(p[0].x, p[1].x, p[2].x), a[2].yzw);	// out 2
 		sum.y += dot(vec3(p[3].x, p[4].x, p[5].x), a[3].xyz);
 		sum.y += dot(vec3(p[6].x, p[7].x, p[8].x), vec3(a[3].w, a[4].x, a[4].y));
 
@@ -415,15 +418,20 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	if (sy<256) height = sy;
 	for (int y=0; y<height; y++) {
 		for (int x=0; x<width; x++) {
-			unsigned char r = pix[(y*sx+x)*3];
-			unsigned char g = pix[(y*sx+x)*3+1];
-			unsigned char b = pix[(y*sx+x)*3+2];
+//			unsigned char r = pix[(y*sx+x)*3];
+//			unsigned char g = pix[(y*sx+x)*3+1];
+//			unsigned char b = pix[(y*sx+x)*3+2];
 
-			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/255.0;	// CCIR Rec.601
-			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
-			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
-//			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
-//			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+//			f[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
+//			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
+//			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
+
+			float r = pix[(y*sx+x)*3] /256.0;
+			float g = pix[(y*sx+x)*3+1] /256.0;
+			float b = pix[(y*sx+x)*3+2] /256.0;
+			f[(y*256+x)*4] = (0.299*r +0.587*g +0.114*b);	// CCIR Rec.601
+			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -488,19 +496,18 @@ int waifu2x_glsl(char *name, char *model, float scale)
 //			int yy = d[(y*XSIZE+x)*4]*255;
 			//printf("%2.2f ",d[(y*XSIZE+x)*4]);
 //			int yy = -196*d[(y*XSIZE+x)*4];
-			int yy = 190*d[(y*XSIZE+x)*4];
-			if (yy<0 || yy>255) printf("%d ",yy);
+//			int yy = 190*d[(y*XSIZE+x)*4];
+//			int yy = 256*d[(y*XSIZE+x)*4];
+//			if (yy<0 || yy>255) printf("%d ",yy);
 
-//			float yy = f[(y*256+x)*4] *255;
-			o[(y*XSIZE+x)*3]   = yy +1.402   *v[y*256+x];
-			o[(y*XSIZE+x)*3+1] = yy -0.34414 *u[y*256+x] -0.71414*v[y*256+x];
-			o[(y*XSIZE+x)*3+2] = yy +1.772   *u[y*256+x];
+			float yy = f[(y*256+x)*4];
+//			o[(y*XSIZE+x)*3]   = yy +1.402   *v[y*256+x];
+//			o[(y*XSIZE+x)*3+1] = yy -0.34414 *u[y*256+x] -0.71414*v[y*256+x];
+//			o[(y*XSIZE+x)*3+2] = yy +1.772   *u[y*256+x];
 
-/*			float yy = -255*d[(y*XSIZE+x)*4];
-			if (yy<0 || yy>255) printf("%2.2f ",yy);
-			o[(y*XSIZE+x)*3] = yy +1.140*v[y*256+x];
-			o[(y*XSIZE+x)*3+1] = yy -0.395*u[y*256+x] -0.580*v[y*256+x];
-			o[(y*XSIZE+x)*3+2] = yy +2.032*u[y*256+x];*/
+			o[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
+			o[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
+			o[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
 		}
 	}
 	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);

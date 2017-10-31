@@ -5,6 +5,14 @@
 #include <time.h>
 #include <sys/time.h>
 
+#define ANSI_COLOR_RED		"\x1b[31m"
+#define ANSI_COLOR_GREEN	"\x1b[32m"
+#define ANSI_COLOR_YELLOW	"\x1b[33m"
+#define ANSI_COLOR_BLUE		"\x1b[34m"
+#define ANSI_COLOR_MAGENTA	"\x1b[35m"
+#define ANSI_COLOR_CYAN		"\x1b[36m"
+#define ANSI_COLOR_RESET	"\x1b[0m"
+
 struct timeval __t0;
 clock_t __startClock;
 
@@ -26,6 +34,6 @@ void clock_end()
 	double realsec = diffsec+diffsub*1e-6;
 	double cpusec = (endClock - __startClock)/(double)CLOCKS_PER_SEC;
 	double percent = 100.0*cpusec/realsec;
-	printf("Time spent on GPU: %f\n", realsec);
-	printf("CPU utilization: %f\n", cpusec);
+	printf(ANSI_COLOR_MAGENTA "Time spent on GPU: %f\n" ANSI_COLOR_RESET, realsec);
+	printf(ANSI_COLOR_GREEN "CPU utilization: %f\n" ANSI_COLOR_RESET, cpusec);
 }
