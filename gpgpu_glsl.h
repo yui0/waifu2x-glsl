@@ -12,7 +12,13 @@
 
 #ifdef _WIN32
 	#include <windows.h>
-	#include <GL/gl.h>
+//	#include <GL/gl.h>
+//	#include <GL/glut.h>
+	#include <GL/glew.h>
+	#include <GLFW/glfw3.h>
+//	#define WINDOWS_GLEXT_DEFINE_FUNCTIONPTR 1
+//	#define WINDOWS_GLEXT_CREATE_FUNCTIONPTR 1
+//	#include "glext_win.h"
 #elif __APPLE__
 	#include <OpenGL/gl3.h>
 	//#include <OpenGL/glu.h>
@@ -31,13 +37,13 @@
 		#include <GLES3/gl3ext.h>
 		//#define GL_CLAMP_TO_BORDER	GL_CLAMP_TO_BORDER_OES
 	#endif
+	#include <unistd.h>
 #endif
 
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 
 //#ifndef _DEBUG_H_
@@ -86,7 +92,8 @@ void coPrintShaderInfo(GLuint shader, const char *str)
 	int logSize, length;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logSize);
 	if (logSize > 1) {
-		GLchar infoLog[logSize];
+		//GLchar infoLog[logSize];
+		GLchar infoLog[8192];
 		glGetShaderInfoLog(shader, logSize, &length, infoLog);
 		debug("Compile Error in %s\n%s\n", str, infoLog);
 	}
@@ -325,6 +332,10 @@ void coInit()
 		assert(!"glfwCreateWindow error!");
 	}
 	glfwMakeContextCurrent(window);
+
+#ifdef _WIN32
+	assert(glewInit() == GLEW_OK);
+#endif
 }
 
 void coTerm()

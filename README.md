@@ -7,7 +7,7 @@ Using GLSL.
 
 - Linux
 - macOS
-- Windows
+- Windows with [GLFW](http://www.glfw.org/) and GLEW
 
 ## How to build
 
