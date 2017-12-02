@@ -44,6 +44,7 @@ $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 
 - https://github.com/yui0/catseye
 - [Image Super-Resolution Using Deep Convolutional Networks](http://arxiv.org/abs/1501.00092)
+- [EnhanceNet: Single Image Super-Resolution Through Automated Texture Synthesis](https://arxiv.org/abs/1612.07919)
 - Waifu2x
   - Original implementation: https://github.com/nagadomi/waifu2x
   - https://github.com/kioku-systemk/waifu2x_webgl
@@ -57,3 +58,4 @@ $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 - Picture
   - Nyanko: https://www.illust-box.jp/member/view/7263/
   - Nyanko: http://www.poipoi.com/yakko/cgi-bin/sb/log/eid5173.html#more-5173
+- [OpenGL on Ma]c(http://asa-no-blog.hatenablog.com/entry/2017/08/26/235737)

@@ -397,10 +397,10 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 {
 	float *u = yuv + 256*256*4;
 	float *v = yuv + 256*256*5;
-	int width = 256;
-	int height = 256;
-	if (sx<256) width = sx;
-	if (sy<256) height = sy;
+	int width = XSIZE;
+	int height = YSIZE;
+	if (sx<XSIZE) width = sx;	// small size <256
+	if (sy<YSIZE) height = sy;
 	for (int y=0; y<height; y++) {
 		for (int x=0; x<width; x++) {
 			uint8_t r = s[(y*sx+x)*3];
@@ -421,14 +421,14 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 	coTransferData(texture[0], 0, 0, XSIZE, YSIZE, GL_FLOAT, yuv);
 	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
-	clock_start();
+	debug_s(clock_start());
 	int n = 0;
 	int r = 1;
 	for (int i=0; i<cat->layers; i++) {
 		int a = (cat->u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
 		int h = (a+15)/16;
-		printf("%d %d %dx%d %d %d %2.4f %2.4f\n", cat->u[i].in, cat->u[i].out, w, h, (cat->u[i].in+3)/4, cat->ws[i], cat->wdata[cat->ws[i]], cat->bdata[cat->bs[i]]);
+		debug_s(printf("%d %d %dx%d %d %d %2.4f %2.4f\n", cat->u[i].in, cat->u[i].out, w, h, (cat->u[i].in+3)/4, cat->ws[i], cat->wdata[cat->ws[i]], cat->bdata[cat->bs[i]]));
 
 		coUniform1i(prog, "INPUTPLANE", (cat->u[i].in+3)/4);
 		coUniform4fv(prog, "bias", a, &cat->bdata[cat->bs[i]]); coAssert();
@@ -445,11 +445,13 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 		result(buff, XSIZE*w, YSIZE*h);
 #endif
 	}
-	clock_end();
+	debug_s(clock_end());
 
 	float *d = coReadDataf(XSIZE, YSIZE, 0);
-	for (int y=0; y<YSIZE-3; y++) {
-		for (int x=0; x<XSIZE-6; x++) {
+	for (int y=8; y<YSIZE-8; y++) {
+		for (int x=8; x<XSIZE-8; x++) {
+	//for (int y=0; y<YSIZE; y++) {
+		//for (int x=0; x<XSIZE; x++) {
 //			float yy = yuv[(y*256+x)*4];
 			float yy = d[(y*256+x)*4]*256.0;
 			int r = yy                     +1.402  *v[y*256+x];
@@ -488,7 +490,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 
 	CatsEye cat;
 	assert(!CatsEye_loadJson(&cat, model));
-	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4);
+	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
 
 	coInit();
@@ -514,12 +516,13 @@ int waifu2x_glsl(char *name, char *model, float scale)
 //	uint8_t *o = calloc(XSIZE*YSIZE, 3);
 //	waifu2x_glsl_run(&cat, prog, texture, yuv, pix, sx, sy, o, 256);
 //	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
+	printf("%d %d -> %d %d *%f\n", w, h, sx, sy, scale);
 	uint8_t *o = calloc(sx*sy, 3);
-	for (int y=0; y<sy; y+=256-3) {
-		for (int x=0; x<sx; x+=256-6) {
-			int ox = x+256-6 > sx ? sx-(256-6) : x;
-			int oy = y+256-3 > sy ? sy-(256-3) : y;
-			printf("%d %d\n",ox,oy);
+	for (int y=0; y<sy-1; y+=256-16) {
+		for (int x=0; x<sx-1; x+=256-16) {
+			int ox = x+256 > sx ? sx-(256+1) : x;
+			int oy = y+256 > sy ? sy-(256+1) : y;
+			printf("%d %d\n", ox, oy);
 			waifu2x_glsl_run(&cat, prog, texture, yuv, pix+(ox+oy*sx)*3, sx, sy, o+(ox+oy*sx)*3, sx);
 		}
 	}
@@ -527,6 +530,9 @@ int waifu2x_glsl(char *name, char *model, float scale)
 	free(o);
 	free(yuv);
 	free(pix);
+
+	free(cat.bdata);
+	free(cat.wdata);
 
 	coTerm();
 	return 0;
