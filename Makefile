@@ -13,12 +13,16 @@ CPPSRC	= $(wildcard *.cpp)
 DEPS	= $(wildcard *.h) Makefile
 OBJS	= $(patsubst %.c,%.o,$(CSRC)) $(patsubst %.cpp,%.o,$(CPPSRC))
 
+#USE_GLES:= 1
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-#	CFLAGS  += `pkg-config --cflags glesv2 egl gbm`
-#	LDFLAGS	+= `pkg-config --libs glesv2 egl gbm` -lglfw
+ifeq ($(USE_GLES),1)
+	CFLAGS  += `pkg-config --cflags glesv2 egl gbm` -DGPGPU_USE_GLES
+	LDFLAGS	+= `pkg-config --libs glesv2 egl gl gbm`
+else
 	CFLAGS  += `pkg-config --cflags gl`
 	LDFLAGS	+= `pkg-config --libs gl` -lglfw
+endif
 endif
 ifeq ($(UNAME_S),Darwin)
 	LDFLAGS	+= -framework OpenGL -lglfw

@@ -4,7 +4,6 @@
 //		©2017 Yuichiro Nakada
 //---------------------------------------------------------
 
-#define GPGPU_USE_GLFW
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 #endif
@@ -12,30 +11,23 @@
 
 #ifdef _WIN32
 	#include <windows.h>
-//	#include <GL/gl.h>
-//	#include <GL/glut.h>
 	#include <GL/glew.h>
 	#include <GLFW/glfw3.h>
-//	#define WINDOWS_GLEXT_DEFINE_FUNCTIONPTR 1
-//	#define WINDOWS_GLEXT_CREATE_FUNCTIONPTR 1
-//	#include "glext_win.h"
 #elif __APPLE__
 	#include <OpenGL/gl3.h>
-	//#include <OpenGL/glu.h>
-	//#include <OpenGL/glext.h>
 	#include <GLFW/glfw3.h>
 #elif __linux
-	#ifdef GPGPU_USE_GLFW
-		#include <GL/gl.h>
-		//#include <GL/glu.h>
-		//#include <GL/glext.h>
-		#include <GLFW/glfw3.h>
-	#else
+	#ifdef GPGPU_USE_GLES
 		#include <EGL/egl.h>
 		#include <EGL/eglext.h>
 		#include <GLES3/gl32.h>
 		#include <GLES3/gl3ext.h>
 		//#define GL_CLAMP_TO_BORDER	GL_CLAMP_TO_BORDER_OES
+	#else
+		#include <GL/gl.h>
+		//#include <GL/glu.h>
+		//#include <GL/glext.h>
+		#include <GLFW/glfw3.h>
 	#endif
 	#include <unistd.h>
 #endif
@@ -174,7 +166,7 @@ GLuint coCreateDataTexture(int w, int h, void *texels, GLuint type, int flag)
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-#ifdef GPGPU_USE_GLFW
+#ifndef GPGPU_USE_GLES
 	glTexImage2D(GL_TEXTURE_2D, 0, (type==GL_FLOAT ? GL_RGBA32F : GL_RGBA), w, h, 0, GL_RGBA, type, texels);
 #else
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, type, texels);
@@ -216,14 +208,6 @@ GLuint coBindOutputTexture(int N, int M, GLuint texture)
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, /*level*/0);
-
-	/*GLuint renderbuffer;
-	glGenRenderbuffers(1, &renderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, N, M);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, renderbuffer);*/
-	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		debug("glGetError: %d", glGetError());
@@ -301,7 +285,7 @@ float *coReadDataf(int N, int M, float *d)
 	glUniformMatrix3fv(l, 1, GL_FALSE, v);\
 }
 
-#ifdef GPGPU_USE_GLFW
+#ifndef GPGPU_USE_GLES
 #define coTransferData(texture, x, y, w, h, type, pix) {\
 	glBindTexture(GL_TEXTURE_2D, texture);\
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, type, pix);\
@@ -317,7 +301,7 @@ float *coReadDataf(int N, int M, float *d)
 }
 #endif
 
-#ifdef GPGPU_USE_GLFW
+#ifndef GPGPU_USE_GLES
 void coInit()
 {
 	GLFWwindow* window;
@@ -351,7 +335,7 @@ EGLContext __core_ctx;
 
 void coInit()
 {
-	bool res;
+	/*bool*/int res;
 	int32_t __fd = open("/dev/dri/renderD128", O_RDWR);
 	assert(__fd > 0);
 

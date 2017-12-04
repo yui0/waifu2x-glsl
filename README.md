@@ -5,13 +5,23 @@ Using GLSL.
 
 ## Platform
 
-- Linux
-- macOS
+- Linux with GLEW
+- macOS with GLEW
 - Windows with [GLFW](http://www.glfw.org/) and GLEW
 
-## How to build
+## How to build on macOS
+
+```
+$ #/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+$ brew install glfw
+$ make
+```
+
+## How to build on Linux
 
 ```bash
+# #dnf install mesa-libgbm-devel libdrm-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLES-devel
+# dnf install glfw-devel
 $ make
 ```
 
@@ -46,8 +56,8 @@ $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 - [Image Super-Resolution Using Deep Convolutional Networks](http://arxiv.org/abs/1501.00092)
 - [EnhanceNet: Single Image Super-Resolution Through Automated Texture Synthesis](https://arxiv.org/abs/1612.07919)
 - Waifu2x
-  - Original implementation: https://github.com/nagadomi/waifu2x
-  - https://github.com/kioku-systemk/waifu2x_webgl
+  - [Waifu2x webgl version](https://github.com/kioku-systemk/waifu2x_webgl) / [GLSL code](https://gist.github.com/yui0/a9a75c93b9e7c6a08f905ed548b4b17c)
+  - [Original implementation](https://github.com/nagadomi/waifu2x)
   - https://github.com/ueshita/waifu2x-converter-glsl
   - https://stanko.github.io/super-resolution-image-resizer
   - https://www.slideshare.net/KosukeNakago/seranet
