@@ -53,15 +53,15 @@ $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 
 ## Demo
 
-- Original
+### Original
 ![Original](waifu_s.jpg)
 
-- Normal Resize
+### Normal Resize
 ![Normal](waifu_d.jpg)
 
-- Waifu2x Resize
-  - ./waifu2x_glsl -s 2.0 -m noise2_model.json waifu_s.jpg -o waifu_d.png
-![Waifu2x](waifu_s.png)
+### Waifu2x Resize
+- ./waifu2x_glsl -s 2.0 -m noise2_model.json waifu_s.jpg -o waifu_d.png
+![Waifu2x](waifu_d.png)
 
 ## References
 
