@@ -472,7 +472,7 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 	free(d);
 }
 
-int waifu2x_glsl(char *name, char *model, float scale)
+int waifu2x_glsl(char *name, char *output, char *model, float scale)
 {
 	uint8_t *pixels;
 	int w, h, bpp;
@@ -526,7 +526,7 @@ int waifu2x_glsl(char *name, char *model, float scale)
 			waifu2x_glsl_run(&cat, prog, texture, yuv, pix+(ox+oy*sx)*3, sx, sy, o+(ox+oy*sx)*3, sx);
 		}
 	}
-	stbi_write_png("output2x.png", sx, sy, 3, o, 0);
+	stbi_write_png(output, sx, sy, 3, o, 0);
 	free(o);
 	free(yuv);
 	free(pix);
@@ -546,6 +546,7 @@ void usage(FILE* fp, int argc, char** argv)
 		"-h                 Print this message\n"
 		"-m <model name>    waifu2x model name [noise2_model.json...]\n"
 		"-s <scale>         Magnification [1.0, 1.6, 2.0...]\n"
+		"-o <output name>   output file name\n"
 		"\n",
 		argv[0]);
 }
@@ -554,15 +555,19 @@ int main(int argc, char* argv[])
 {
 	char *name;
 	char *model = "noise1_model.json";
+	char *output = "output2x.png";
 	float scale = 2.0;
 
 	struct parg_state ps;
 	int c;
 	parg_init(&ps);
-	while ((c = parg_getopt(&ps, argc, argv, "hm:s:")) != -1) {
+	while ((c = parg_getopt(&ps, argc, argv, "hm:s:o:")) != -1) {
 		switch (c) {
 		case 1:
 			name = (char*)ps.optarg;
+			break;
+		case 'o':
+			output = (char*)ps.optarg;
 			break;
 		case 'm':
 			model = (char*)ps.optarg;
@@ -576,7 +581,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
-	waifu2x_glsl(name, model, scale);
+	waifu2x_glsl(name, output, model, scale);
 
 	return 0;
 }
