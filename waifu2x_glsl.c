@@ -1,7 +1,7 @@
 //---------------------------------------------------------
 //	Cat's eye
 //
-//		©2016-2017 Yuichiro Nakada
+//		©2016-2018 Yuichiro Nakada
 //---------------------------------------------------------
 
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
@@ -481,12 +481,23 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 	printf("%s %dx%d %d\n", name, w, h, bpp);
 	bpp = 3;
 
+	// resize
 	int sx = w * scale;
 	int sy = h * scale;
 	uint8_t *pix = malloc(sx*sy*bpp);
 	stbir_resize_uint8_srgb(pixels, w, h, 0, pix, sx, sy, 0, bpp, -1, 0);
 	stbi_image_free(pixels);
 	debug_s(stbi_write_jpg("output.jpg", sx, sy, bpp, pix, 0));
+
+	// expand edge by +16
+	sx += 16;
+	sy += 16;
+	pixels = calloc(sx*sy*bpp, 1);
+	for (int y=8; y<sy-8; y++) {
+		memcpy(pixels +(8+(y*sx))*bpp, pix +((y-8)*(sx-16))*bpp, (sx-16)*bpp);
+	}
+	free(pix);
+	pix = pixels;
 
 	CatsEye cat;
 	assert(!CatsEye_loadJson(&cat, model));
@@ -526,9 +537,22 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 			waifu2x_glsl_run(&cat, prog, texture, yuv, pix+(ox+oy*sx)*3, sx, sy, o+(ox+oy*sx)*3, sx);
 		}
 	}
-	stbi_write_png(output, sx, sy, 3, o, 0);
-	free(o);
+//	stbi_write_png(output, sx, sy, 3, o, 0);
+//	free(o);
 	free(yuv);
+	free(pix);
+
+	// shrink edge by -16
+	sx -= 16;
+	sy -= 16;
+	pix = calloc(sx*sy*bpp, 1);
+	for (int y=0; y<sy; y++) {
+		memcpy(pix +(y*sx)*bpp, o +(8+(y+8)*(sx+16))*bpp, sx*bpp);
+	}
+	free(o);
+	char *ext = strrchr(output, '.');
+	if (!strcmp(ext, ".jpg")) stbi_write_jpg(output, sx, sy, 3, pix, 0);
+	else stbi_write_png(output, sx, sy, 3, pix, 0);
 	free(pix);
 
 	free(cat.bdata);

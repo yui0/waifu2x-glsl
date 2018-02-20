@@ -35,7 +35,7 @@ Options:
 -h                 Print this message
 -m <model name>    waifu2x model name [noise2_model.json...]
 -s <scale>         Magnification [1.0, 1.6, 2.0...]
--o <output name>   output file name
+-o <output name>   output file name [*.png, *.jpg]
 
 $ ./waifu2x_glsl -s 1.0 nyanko.jpg
 $ ./waifu2x_glsl -m vgg_7/art_y/noise3_model.json nyanko.jpg
