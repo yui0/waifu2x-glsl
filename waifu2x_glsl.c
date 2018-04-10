@@ -35,26 +35,26 @@ typedef struct {
 	int stride;
 } CatsEye_Layer;
 
-#define numerus		float
+#define real		float
 typedef struct {
 	// number of each layer
 	int layers;
 	CatsEye_Layer *u;
 
 	// input layers
-	numerus *xdata;
+	real *xdata;
 	int xsize;
 	// output layers [o = f(z)]
-	numerus **z, **o, *odata;
+	real **z, **o, *odata;
 	int osize;
 	// error value
-	numerus **d, *ddata;
+	real **d, *ddata;
 	int dsize;
 	// weights
-	numerus **w, *wdata;
+	real **w, *wdata;
 	int *ws, wsize;
 	// bias
-	numerus **b, *bdata;
+	real **b, *bdata;
 	int *bs, bsize;
 } CatsEye;
 
@@ -66,9 +66,9 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 	this->layers = json_array_get_count(a);
 	this->u = malloc(sizeof(CatsEye_Layer)*this->layers);
-	this->b = malloc(sizeof(numerus*)*this->layers);
+	this->b = malloc(sizeof(real*)*this->layers);
 	this->bs = malloc(sizeof(int)*this->layers);
-	this->w = malloc(sizeof(numerus*)*this->layers);
+	this->w = malloc(sizeof(real*)*this->layers);
 	this->ws = malloc(sizeof(int)*this->layers);
 
 	this->bsize = 0;
@@ -77,7 +77,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 		this->bs[i] = this->bsize;
 		this->bsize += json_object_get_number(o, "nOutputPlane");
 	}
-	this->bdata = malloc(sizeof(numerus)*this->bsize);
+	this->bdata = malloc(sizeof(real)*this->bsize);
 	for (int i=0; i<this->layers; i++) {
 		JSON_Object *o = json_array_get_object(a, i);
 		JSON_Array *aa = json_object_get_array(o, "bias");
@@ -93,7 +93,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 		this->wsize += json_object_get_number(o, "nInputPlane")*json_object_get_number(o, "nOutputPlane")
 			*json_object_get_number(o, "kW")*json_object_get_number(o, "kH");
 	}
-	this->wdata = malloc(sizeof(numerus)*this->wsize);
+	this->wdata = malloc(sizeof(real)*this->wsize);
 	for (int i=0; i<this->layers; i++) {
 		JSON_Object *o = json_array_get_object(a, i);
 		JSON_Array *aa = json_object_get_array(o, "weight");
@@ -501,8 +501,8 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 
 	CatsEye cat;
 	assert(!CatsEye_loadJson(&cat, model));
-	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4); // 256*281
-	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
+	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
+	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 
 	coInit();
 	GLuint prog = coCreateProgram(convolution);
