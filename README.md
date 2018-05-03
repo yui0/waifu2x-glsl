@@ -8,6 +8,7 @@ Using GLSL.
 - Linux with GLEW
 - macOS with GLEW
 - Windows with [GLFW](http://www.glfw.org/) and GLEW
+  - nupengl.core with NuGet
 
 ## How to build on macOS
 
