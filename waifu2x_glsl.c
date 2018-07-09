@@ -356,15 +356,15 @@ void main()
 
 void *recalloc(void *p, int s, int ss)
 {
-	void *r = calloc(ss, 1);
+	void *r = calloc(1, ss);
 	if (!r) return 0;
 	memcpy(r, p, s);
 	free(p);
 	return r;
 }
 
-//#define DEBUG
-#ifdef DEBUG
+//#define _DEBUG
+#ifdef _DEBUG
 #define debug_s(x)	{x;}
 #else
 #define debug_s(x)
@@ -373,7 +373,7 @@ void *recalloc(void *p, int s, int ss)
 void result(char *name, int w, int h)
 {
 	float *d = coReadDataf(w, h, 0);
-#ifdef DEBUG
+#ifdef _DEBUG
 	for (int i=0; i<8/*h*/; i++) {
 		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*w+j)*4]);
 		printf("\n");
@@ -439,7 +439,7 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 		coCompute();
 		n ^= 1;	// swap
 		r ^= 1;
-#ifdef DEBUG
+#ifdef _DEBUG
 		char buff[256];
 		sprintf(buff, "output2x_%02d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
