@@ -8,7 +8,10 @@ Using GLSL.
 - Linux with GLEW
 - macOS with GLEW
 - Windows with [GLFW](http://www.glfw.org/) and GLEW
-  - nupengl.core with NuGet
+
+## Download
+
+- You can download this program from [here](https://github.com/yui0/waifu2x-glsl/releases).
 
 ## How to build on macOS
 
@@ -25,6 +28,18 @@ $ make
 # dnf install glfw-devel
 $ make
 ```
+
+## How to build on Windows
+
+1. Installing OpenGL
+
+- nupengl.core with NuGet
+
+2. Linking OpenGL
+
+- Choose ‘Linker-> General’.
+- In the ‘Additional Dependencies’ field click on the arrow that appears at the end of the field and choose Edit…
+- In the dialog that appears enter “opengl32.lib”
 
 ## How to use
 

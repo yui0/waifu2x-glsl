@@ -1,10 +1,11 @@
-//---------------------------------------------------------
+﻿//---------------------------------------------------------
 //	Cat's eye
 //
 //		©2016-2018 Yuichiro Nakada
 //---------------------------------------------------------
 
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
+#define _CRT_SECURE_NO_WARNINGS 1
 #include <stdlib.h>
 #include <stdint.h>
 #include "gpgpu_glsl.h"
@@ -131,14 +132,18 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 #define KERNEL_W	256
 #define KERNEL_H	281	// 287136/4/256
 
+#undef max	// for windows
+#undef min	// for windows
 char convolution[] = STRINGIFY(
 
 #ifdef GL_ES
-precision highp float;
+\n
+precision highp float;\n
 #endif
+\n
 
-#define xSize		1./DATA_XSIZE.
-#define ySize		1./DATA_YSIZE.
+#define xSize		1./DATA_XSIZE. \n
+#define ySize		1./DATA_YSIZE. \n
 
 uniform int INPUTPLANE;	// /4
 uniform vec2 inputOffset[128/4];
