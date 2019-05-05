@@ -508,7 +508,7 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 
 	CatsEye cat;
 	int r = CatsEye_loadJson(&cat, model);
-	assert(!r);
+	assert(!r && "*.json file not found!");
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 

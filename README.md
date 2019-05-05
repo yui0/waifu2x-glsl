@@ -24,7 +24,7 @@ $ make
 ## How to build on Linux
 
 ```bash
-# #dnf install mesa-libgbm-devel libdrm-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLES-devel
+# #dnf install mesa-libgbm-devel libdrm-devel mesa-libGL-devel mesa-libGLU-devel mesa-libEGL-devel mesa-libGLES-devel
 # dnf install glfw-devel
 $ make
 ```
