@@ -1,7 +1,7 @@
 ﻿//---------------------------------------------------------
 //	Cat's eye
 //
-//		©2016-2018 Yuichiro Nakada
+//		©2016-2020 Yuichiro Nakada
 //---------------------------------------------------------
 
 // clang -Os waifu2x_glsl.c -o waifu2x_glsl `pkg-config --libs --cflags glesv2 egl gbm` -lglfw -lm
@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "gpgpu_glsl.h"
-#include "clock.h"
+//#include "clock.h"
 
 #define PARG_IMPLEMENTATION
 #include "parg.h"
@@ -130,7 +130,9 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 #define DATA_XSIZE	4096
 #define DATA_YSIZE	2048
 #define KERNEL_W	256
-#define KERNEL_H	281	// 287136/4/256
+//#define KERNEL_H	281	// weight(YUV): 287136/4/256
+//#define KERNEL_H	284	// weight(RGB): 290016/4/256
+#define KERNEL_H	2048	// weight(RGB): 290016/4/256
 
 #undef max	// for windows
 #undef min	// for windows
@@ -172,7 +174,7 @@ void main()
 //	vec2 a = (uv+vec2(xSize/2., ySize/2.))*uvpos;
 	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
-	int op = int(oplane.x + oplane.y*16.);
+	int op = int(oplane.x + oplane.y*16.); // output channel
 
 	// calc w pos
 	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
@@ -184,7 +186,7 @@ void main()
 	pos[3] = pos[2] + n;
 
 	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
-	if (INPUTPLANE==1) {
+	if (INPUTPLANE==1) { // calculation per 1 channel
 		pos[0] = arg * (float(op *9) +wpos +0.5);	// arg * (index+0.5)
 
 		vec4 p[9];
@@ -225,7 +227,7 @@ void main()
 		sum.w += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].x, p[7].x, p[8].x), a[8].yzw);
 	} else {
-		for (int i=0; i<INPUTPLANE; i++) {
+		for (int i=0; i<INPUTPLANE; i++) { // calculation per 4 channels
 			vec2 tuv = a + inputOffset[i];
 			vec4 p[9];
 			p[0] = texture2D(X, tuv + vec2(-xSize, -ySize));
@@ -509,7 +511,9 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 	CatsEye cat;
 	int r = CatsEye_loadJson(&cat, model);
 	assert(!r && "*.json file not found!");
+//	printf("%d\n", cat.wsize);
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
+//	printf("%d\n", cat.bsize);
 	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 
 	coInit();
