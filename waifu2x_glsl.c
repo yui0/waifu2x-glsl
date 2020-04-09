@@ -147,7 +147,7 @@ precision highp float;\n
 #define xSize		1./DATA_XSIZE. \n
 #define ySize		1./DATA_YSIZE. \n
 
-uniform int INPUTPLANE;	// /4
+uniform int INPUTPLANE;	// 1/4
 uniform vec2 inputOffset[128/4];
 uniform vec2 uvpos;
 uniform float wpos;
@@ -172,21 +172,21 @@ void main()
 	vec2 a = uv*uvpos;
 //	vec2 a = uv*uvpos -vec2(xSize/2., ySize/2.);
 //	vec2 a = (uv+vec2(xSize/2., ySize/2.))*uvpos;
-	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.));	// /0.0625 (256)
+	vec2 oplane = floor(a/vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.)); // /0.0625 (256)
 	a -= oplane * vec2(XSIZE./DATA_XSIZE., YSIZE./DATA_YSIZE.);
-	int op = int(oplane.x + oplane.y*16.); // output channel
+	int op = int(oplane.x + oplane.y*16.); // output channel 1/4
 
 	// calc w pos
-	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.);
+	const vec2 arg = vec2(1./KERNEL_W., 1./KERNEL_W./KERNEL_H.); // 1dot
 	vec2 pos[4];
-	pos[0] = arg * (float(op*4 *INPUTPLANE *9) +wpos +0.5);	// arg * (index+0.5)
+	pos[0] = arg * (float(op*4 *INPUTPLANE *9) +wpos +0.5); // arg * (index+0.5)
 	vec2 n = arg * float(INPUTPLANE *9);
 	pos[1] = pos[0] + n;
 	pos[2] = pos[1] + n;
 	pos[3] = pos[2] + n;
 
 	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
-	if (INPUTPLANE==1) { // calculation per 1 channel
+/*	if (INPUTPLANE==1) { // the input only 1 channel
 		pos[0] = arg * (float(op *9) +wpos +0.5);	// arg * (index+0.5)
 
 		vec4 p[9];
@@ -226,7 +226,7 @@ void main()
 		sum.w += dot(vec3(p[0].x, p[1].x, p[2].x), vec3(a[6].w, a[7].x, a[7].y));
 		sum.w += dot(vec3(p[3].x, p[4].x, p[5].x), vec3(a[7].z, a[7].w, a[8].x));
 		sum.w += dot(vec3(p[6].x, p[7].x, p[8].x), a[8].yzw);
-	} else {
+	} else {*/
 		for (int i=0; i<INPUTPLANE; i++) { // calculation per 4 channels
 			vec2 tuv = a + inputOffset[i];
 			vec4 p[9];
@@ -345,7 +345,7 @@ void main()
 			sum.w += dot(vec3(p[3].w, p[4].w, p[5].w), vec3(a[7].z, a[7].w, a[8].x));
 			sum.w += dot(vec3(p[6].w, p[7].w, p[8].w), a[8].yzw);
 		}
-	}
+//	}
 	// Leaky ReLU
 	sum += bias[op];
 	sum = max(sum, 0.0) + min(sum, 0.0) * 0.1;
@@ -413,13 +413,15 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 			uint8_t r = s[(y*sx+x)*3];
 			uint8_t g = s[(y*sx+x)*3+1];
 			uint8_t b = s[(y*sx+x)*3+2];
-
+#if 1
 			yuv[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
 			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
 			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
-//			yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
-//			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
-//			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+#else
+			yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
+			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+#endif
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -514,7 +516,26 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 //	printf("%d\n", cat.wsize);
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
 //	printf("%d\n", cat.bsize);
-	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
+	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3)); // per 4 channels, +3
+
+	// if the input channels is less than 4
+	real *wd = calloc(KERNEL_W*KERNEL_H*4, sizeof(real));
+	int wp = 0;
+	for (int i=0; i<cat.layers; i++) {
+		if (cat.u[i].in<4) {
+			for (int n=0; n<cat.u[i].out; n++) {
+				memcpy(wd+wp, cat.wdata +cat.ws[i]+n*3*3, 3*3*sizeof(real));
+				wp += 4*3*3;
+			}
+		} else {
+			int size = (i==cat.layers-1) ? cat.wsize-cat.ws[i] : cat.ws[i+1]-cat.ws[i];
+			memcpy(wd+wp, cat.wdata +cat.ws[i], size*sizeof(real));
+			cat.ws[i] = wp;
+			wp += size;
+		}
+	}
+	free(cat.wdata);
+	cat.wdata = wd;
 
 	coInit();
 	GLuint prog = coCreateProgram(convolution);
