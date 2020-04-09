@@ -413,15 +413,21 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 			uint8_t r = s[(y*sx+x)*3];
 			uint8_t g = s[(y*sx+x)*3+1];
 			uint8_t b = s[(y*sx+x)*3+2];
+			if (cat->u[0].in==1) { // yuv mode
 #if 1
-			yuv[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
-			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
-			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
+				yuv[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
+				u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
+				v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
 #else
-			yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
-			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
-			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+				yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
+				u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+				v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 #endif
+			} else { // rgb mode
+				yuv[(y*256+x)*4] = r/256.0;
+				yuv[(y*256+x)*4+1] = g/256.0;
+				yuv[(y*256+x)*4+2] = b/256.0;
+			}
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -461,21 +467,37 @@ void waifu2x_glsl_run(CatsEye *cat, GLuint prog, GLuint *texture, float *yuv, ui
 		for (int x=8; x<XSIZE-8; x++) {
 	//for (int y=0; y<YSIZE; y++) {
 		//for (int x=0; x<XSIZE; x++) {
-//			float yy = yuv[(y*256+x)*4];
-			float yy = d[(y*256+x)*4]*256.0;
-			int r = yy                     +1.402  *v[y*256+x];
-			int g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
-			int b = yy +1.772  *u[y*256+x];
-			uint8_t *pix = &p[(y*wx+x)*3];
-			if (!pix[0] || !pix[1] || !pix[2]) {
-				pix[0] = r>255 ? 255 : r<0 ? 0 : r;
-				pix[1] = g>255 ? 255 : g<0 ? 0 : g;
-				pix[2] = b>255 ? 255 : b<0 ? 0 : b;
-			}
+			if (cat->u[0].in==1) { // yuv mode
+//				float yy = yuv[(y*256+x)*4];
+				float yy = d[(y*256+x)*4]*256.0;
+				int r = yy                     +1.402  *v[y*256+x];
+				int g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
+				int b = yy +1.772  *u[y*256+x];
+				uint8_t *pix = &p[(y*wx+x)*3];
+				if (!pix[0] || !pix[1] || !pix[2]) {
+					pix[0] = r>255 ? 255 : r<0 ? 0 : r;
+					pix[1] = g>255 ? 255 : g<0 ? 0 : g;
+					pix[2] = b>255 ? 255 : b<0 ? 0 : b;
+				}
 
-//			p[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
-//			p[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
-//			p[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
+//				p[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
+//				p[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
+//				p[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
+			} else { // rgb mode
+				int r = d[(y*256+x)*4]*256.0;
+				int g = d[(y*256+x)*4+1]*256.0;
+				int b = d[(y*256+x)*4+2]*256.0;
+				/*p[(y*wx+x)*3] = r;
+				p[(y*wx+x)*3+1] = g;
+				p[(y*wx+x)*3+2] = b;*/
+				uint8_t *pix = &p[(y*wx+x)*3];
+				if (!pix[0] || !pix[1] || !pix[2]) {
+					pix[0] = r>255 ? 255 : r<0 ? 0 : r;
+					pix[1] = g>255 ? 255 : g<0 ? 0 : g;
+					pix[2] = b>255 ? 255 : b<0 ? 0 : b;
+				}
+
+			}
 		}
 	}
 	free(d);
@@ -524,8 +546,11 @@ int waifu2x_glsl(char *name, char *output, char *model, float scale)
 	for (int i=0; i<cat.layers; i++) {
 		if (cat.u[i].in<4) {
 			for (int n=0; n<cat.u[i].out; n++) {
-				memcpy(wd+wp, cat.wdata +cat.ws[i]+n*3*3, 3*3*sizeof(real));
-				wp += 4*3*3;
+				for (int j=0; j<cat.u[i].in; j++) {
+					memcpy(wd+wp, cat.wdata +cat.ws[i]+n*3*3*cat.u[i].in+j*3*3, 3*3*sizeof(real));
+					wp += 3*3;
+				}
+				wp += (4-cat.u[i].in)*3*3;
 			}
 		} else {
 			int size = (i==cat.layers-1) ? cat.wsize-cat.ws[i] : cat.ws[i+1]-cat.ws[i];
