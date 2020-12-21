@@ -9,7 +9,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "gpgpu_glsl.h"
-//#include "clock.h"
+
+//#define _DEBUG
+#ifdef _DEBUG
+#include "clock.h"
+#endif
 
 #define PARG_IMPLEMENTATION
 #include "parg.h"
